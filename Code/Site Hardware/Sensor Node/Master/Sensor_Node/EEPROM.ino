@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 void EEPread (int addr, int len, char data[]) {
   char r;
   byte i = 0;

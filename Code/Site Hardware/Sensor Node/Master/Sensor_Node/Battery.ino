@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 void battRoutine() {
   if (battCount == battTrigger) {
 

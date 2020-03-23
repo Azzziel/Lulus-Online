@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 //------------ Condition State ------------
 
 void checkParkCondition() {

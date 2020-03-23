@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 void initATroutine () {
   digitalWrite(setAT_Pin, LOW);
   delay (50);

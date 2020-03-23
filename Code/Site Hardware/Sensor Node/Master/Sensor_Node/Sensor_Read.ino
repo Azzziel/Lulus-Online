@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 //------------ Sensor Read ------------
 
 float sensorRead() {

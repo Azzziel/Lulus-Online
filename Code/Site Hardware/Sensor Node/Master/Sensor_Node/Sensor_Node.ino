@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 #include <Wire.h>
 #include <MechaQMC5883.h>
 #include <SoftwareSerial.h>
