@@ -3,7 +3,7 @@ void RF_Listen() {
     char buffWord = Serial.read();
 
     if (buffWord != (char)0x0A) {
-      receiveRF[i] = buffWord;
+      receiveRF[iRead] = buffWord;
       iRead++;
     }
     else {
