@@ -1,0 +1,4 @@
+a dummy txt to make the folder appear in Github
+Well, github kalo foldernya kosong, foldernya pun ilang
+
+-- Kalo udah ada isi, apus aja
