@@ -1,12 +1,12 @@
 #include <Arduino.h>
 
-#include <Wire.h>
+#include <EEPROM.h>
 #include <MechaQMC5883.h>
 #include <SoftwareSerial.h>
+#include <Wire.h>
 #include "LowPower.h"
-#include <EEPROM.h>
 
-//ID Data
+// ID Data
 char IDsensor[10], IDrptr[10];
 
 // Magneto Data
@@ -33,7 +33,6 @@ byte iCount;
 long battTrigger;
 long battCount;
 
-
 void setup() {
   Serial.begin(2400);
   RF.begin(2400);
@@ -46,27 +45,27 @@ void setup() {
   canListen = 1;
 
   // Read the existing EEPROM to get the sensor and repeater ID
-  EEPread (1, 10, IDsensor);
-  EEPread (11, 10, IDrptr);
-  EEPread (21, 10, GidleEEP);
+  EEPread(1, 10, IDsensor);
+  EEPread(11, 10, IDrptr);
+  EEPread(21, 10, GidleEEP);
 
-  Serial.print ("ID Sensor: ");
-  Serial.print (IDsensor);
-  Serial.print ("   | ID Rptr: ");
-  Serial.print (IDrptr);
-  Serial.print ("   | G idle: ");
-  Serial.println (GidleEEP);
+  Serial.print("ID Sensor: ");
+  Serial.print(IDsensor);
+  Serial.print("   | ID Rptr: ");
+  Serial.print(IDrptr);
+  Serial.print("   | G idle: ");
+  Serial.println(GidleEEP);
 
   // Set the counter value to read Batt
   // 24hours(86400s)/ 4s(sleep) = 21600. So it's +- every 1 day
   battTrigger = random(21000, 22000);
 
-  // Sending a RESET notification to gateway and start listen for a BEGIN command
+  // Sending a RESET notification to gateway and start listen for a BEGIN
+  // command
   initATroutine();
 }
 
 void loop() {
-
   //=========================
   //-------- Start State
   //=========================
@@ -80,10 +79,8 @@ void loop() {
   //=========================
 
   if (!canListen) {
-
     // First time write G-Idle
-    if (isBeginReading)
-    {
+    if (isBeginReading) {
       writeGidle();
       isBeginReading = 0;
 
@@ -98,7 +95,7 @@ void loop() {
 
     checkParkCondition();
 
-    //Battery Routine
+    // Battery Routine
     battRoutine();
 
     // All is done, now sleep!

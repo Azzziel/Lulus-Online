@@ -1,25 +1,25 @@
 #include <Arduino.h>
 
 void dataSendRF(char property[], char value[]) {
-  channelAT (chSend);
+  channelAT(chSend);
 
   // Make the data string
   char sendRF[30];
-  strcpy (sendRF, "<");  // Put the sensor ID
-  strcat (sendRF, IDrptr);  // Put the sensor ID
-  strcat (sendRF, "/");
-  strcat (sendRF, IDsensor);  // Append this sensor ID
-  strcat (sendRF, "/");
-  strcat (sendRF, property);  // Append the property
-  strcat (sendRF, "/");
-  strcat (sendRF, value);  // Append with the status
-  strcat (sendRF, "/>");
+  strcpy(sendRF, "<");     // Put the sensor ID
+  strcat(sendRF, IDrptr);  // Put the sensor ID
+  strcat(sendRF, "/");
+  strcat(sendRF, IDsensor);  // Append this sensor ID
+  strcat(sendRF, "/");
+  strcat(sendRF, property);  // Append the property
+  strcat(sendRF, "/");
+  strcat(sendRF, value);  // Append with the status
+  strcat(sendRF, "/>");
 
   delay(50);
   Serial.println(sendRF);
   RF.write(sendRF);
   delay(50);
-  memset (sendRF, '\0', sizeof(sendRF));
+  memset(sendRF, '\0', sizeof(sendRF));
 }
 
 void listenRF() {
@@ -27,8 +27,8 @@ void listenRF() {
   while (RF.available()) {
     char buffWord = RF.read();
     delay(2);
-    
-    //Check if the incoming message is '>'
+
+    // Check if the incoming message is '>'
     if (buffWord == (char)0x3e) {
       canStartRead = false;
       canStopRead = true;
@@ -46,10 +46,10 @@ void listenRF() {
       canStopRead = false;
     }
 
-    //Check if the incoming message is '<'
+    // Check if the incoming message is '<'
     if (buffWord == (char)0x3c) {
       canStartRead = true;
-      memset (RFmessage, '\0', sizeof(RFmessage));
+      memset(RFmessage, '\0', sizeof(RFmessage));
       iCount = 0;
     }
   }

@@ -7,9 +7,8 @@ void checkParkCondition() {
   //-------- Idle -> Parking
   //=========================
 
-  if ((abs (G - Gidle) > valueTrigger) && !canPark) {
-
-    Serial.println ("menarik nih, beneran ada?");
+  if ((abs(G - Gidle) > valueTrigger) && !canPark) {
+    Serial.println("menarik nih, beneran ada?");
 
     // Sleep while waiting to recheck
     delay(200);
@@ -17,16 +16,16 @@ void checkParkCondition() {
 
     // Time to recheck!
     G = sensorRead();
-    Serial.print ("nilainya sekarang: ");
-    Serial.println (G);
+    Serial.print("nilainya sekarang: ");
+    Serial.println(G);
 
     // Indeed, there is a car
-    if ((abs (G - Gidle) >= valueTrigger)) {
+    if ((abs(G - Gidle) >= valueTrigger)) {
       canPark = 1;
-      Serial.println ("wah beneran ada mobil");
+      Serial.println("wah beneran ada mobil");
 
       //-------- Sending Routine
-      dataSendRF("CAR", "0");      // Tell that it's occupied
+      dataSendRF("CAR", "0");  // Tell that it's occupied
       listenRoutine();
       // Wait until it get the ACK
       while (canListen) {
@@ -35,10 +34,10 @@ void checkParkCondition() {
       }
       //---------------------
 
-      //Sampling for saving the based value
+      // Sampling for saving the based value
       writeGpark();
-      Serial.print ("Nilai patokan Gpark: ");
-      Serial.println (Gpark);
+      Serial.print("Nilai patokan Gpark: ");
+      Serial.println(Gpark);
     }
   }
 
@@ -46,9 +45,10 @@ void checkParkCondition() {
   //-------- Parking -> Idle
   //=========================
 
-  if ((abs (G - Gidle) < valueIgnored) && (abs (G - Gpark) > valueTrigger) && canPark) {
+  if ((abs(G - Gidle) < valueIgnored) && (abs(G - Gpark) > valueTrigger) &&
+      canPark) {
     // Setting the timer
-    Serial.println ("beneran pergi?");
+    Serial.println("beneran pergi?");
 
     // Sleep while waiting to recheck
     delay(200);
@@ -56,33 +56,31 @@ void checkParkCondition() {
 
     // Time to recheck!
     G = sensorRead();
-    Serial.print ("nilainya sekarang: ");
-    Serial.println (G);
-
+    Serial.print("nilainya sekarang: ");
+    Serial.println(G);
 
     // Indeed, its' gone
-    if ((abs (G - Gidle) < valueIgnored) && (abs (G - Gpark) > valueTrigger)) {
+    if ((abs(G - Gidle) < valueIgnored) && (abs(G - Gpark) > valueTrigger)) {
       canPark = 0;
-      Serial.println ("mobilnya keluar");
+      Serial.println("mobilnya keluar");
 
-      //Sending Routine
-      dataSendRF("CAR", "1");       // Tell that it's available
+      // Sending Routine
+      dataSendRF("CAR", "1");  // Tell that it's available
       listenRoutine();
-      //Wait until it get the ACK
+      // Wait until it get the ACK
       while (canListen) {
         dataSendRF("CAR", "1");
         listenRoutine();
       }
       //---------------------
 
-      //Sampling for based value
+      // Sampling for based value
       writeGidle();
-      Serial.print ("Nilai patokan Gidle: ");
-      Serial.println (Gidle);
+      Serial.print("Nilai patokan Gidle: ");
+      Serial.println(Gidle);
     }
   }
 }
-
 
 //=========================
 //-------- Write the G base
@@ -93,20 +91,21 @@ void writeGidle() {
   Gidle = sensorReadDetail();
 
   // Compare to the G idle EEPROM
-  GidleEEPnum = atoi (GidleEEP);
+  GidleEEPnum = atoi(GidleEEP);
 
   // If its premade value ('99')
   if (GidleEEPnum == 99) {
-    sprintf(GidleEEP, "%d", Gidle);  //save Gidle num value to GidleEEP char value
-    EEPwrite (21, GidleEEP);
+    sprintf(GidleEEP, "%d",
+            Gidle);  // save Gidle num value to GidleEEP char value
+    EEPwrite(21, GidleEEP);
   }
 
   // If the value similar
-  else if (abs (GidleEEPnum - Gidle) < valueIgnored) {
-    //Sending Routine
-    dataSendRF("CAR", "1");     // Tell that it's available
+  else if (abs(GidleEEPnum - Gidle) < valueIgnored) {
+    // Sending Routine
+    dataSendRF("CAR", "1");  // Tell that it's available
     listenRoutine();
-    //Wait until it get the ACK
+    // Wait until it get the ACK
     while (canListen) {
       dataSendRF("CAR", "1");
       listenRoutine();
@@ -114,35 +113,36 @@ void writeGidle() {
   }
 
   // If the value difference significantly
-  else if (abs (GidleEEPnum - Gidle) > valueTrigger) {
-    //Sending Routine
-    dataSendRF("CAR", "0");     // Tell that it's occupied
+  else if (abs(GidleEEPnum - Gidle) > valueTrigger) {
+    // Sending Routine
+    dataSendRF("CAR", "0");  // Tell that it's occupied
     listenRoutine();
-    //Wait until it get the ACK
+    // Wait until it get the ACK
     while (canListen) {
       dataSendRF("CAR", "0");
       listenRoutine();
     }
   }
 
-  // If the value difference considerable, update the EEPROM, probably due to the nature or sensor in the long run
-  else if ((abs (GidleEEPnum - Gidle) > valueIgnored) && (abs (GidleEEPnum - Gidle) < valueConsideredEEP)) {
-    //Sending Routine
-    dataSendRF("CAR", "1");     // Tell that it's available
+  // If the value difference considerable, update the EEPROM, probably due to
+  // the nature or sensor in the long run
+  else if ((abs(GidleEEPnum - Gidle) > valueIgnored) &&
+           (abs(GidleEEPnum - Gidle) < valueConsideredEEP)) {
+    // Sending Routine
+    dataSendRF("CAR", "1");  // Tell that it's available
     listenRoutine();
-    //Wait until it get the ACK
+    // Wait until it get the ACK
     while (canListen) {
       dataSendRF("CAR", "1");
       listenRoutine();
     }
 
     // Update the EEPROM
-    sprintf(GidleEEP, "%d", Gidle);  //save Gidle num value to GidleEEP char value
-    EEPwrite (21, GidleEEP);
+    sprintf(GidleEEP, "%d",
+            Gidle);  // save Gidle num value to GidleEEP char value
+    EEPwrite(21, GidleEEP);
   }
 }
 
 // G park
-void writeGpark() {
-  Gpark = sensorReadDetail();
-}
+void writeGpark() { Gpark = sensorReadDetail(); }
