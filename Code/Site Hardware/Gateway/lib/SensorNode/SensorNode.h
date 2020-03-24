@@ -52,7 +52,7 @@ public:
     }
 
     void initialize();
-    
+
     inline bool getInitializationStatus() const
     {
         return isInitialized;
@@ -69,7 +69,7 @@ private:
     static unsigned int nodeCount;
 
     bool isInitialized = false;
-    
+
     bool nodeStatus{};
     unsigned int nodeBattery{};
 

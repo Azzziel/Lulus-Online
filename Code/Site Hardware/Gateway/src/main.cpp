@@ -2,16 +2,16 @@
 
 #include <EEPROM.h>
 
+#include <HTTPClient.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <HTTPClient.h>
 
 #include <ArduinoJson.h>
 
-#include <POSTHandler.h>
-#include <SensorNode.h>
 #include <HexConverter.h>
+#include <POSTHandler.h>
 #include <PayloadHandler.h>
+#include <SensorNode.h>
 
 const char WIFI_SSID[] PROGMEM = "HOME-NETWORK";
 const char WIFI_PASS[] PROGMEM = ":Waffle/64/Licious:";
@@ -42,7 +42,7 @@ const char END = '>';
 const char FINAL = '#';
 const char SEPARATOR = '/';
 const char SUBSEPARATOR = ':';
-}; // namespace MessageChar
+} // namespace MessageChar
 
 HTTPClient httpClient;
 POSTHandler post{&httpClient, SERVER_URL, SERVER_KEY};
@@ -59,6 +59,7 @@ void setup()
     Serial.begin(MONITOR_SPEED);
     Serial2.begin(HC12::BAUD_RATE);
 
+    // WiFi has yet to connect, turn the LED on
     digitalWrite(BUILTIN_LED, HIGH);
 
     WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -66,10 +67,17 @@ void setup()
     while (WiFi.status() != WL_CONNECTED)
         delay(0);
 
+    // Now that it's connected, turn the LED off
     digitalWrite(BUILTIN_LED, LOW);
 
     EEPROM.begin(sizeof(ThisGateway::ID));
     ThisGateway::ID = EEPROM.readUShort(ThisGateway::ID_SAVE_ADDRESS);
+
+    Serial.print("[M] This gateway's ID is ");
+    Serial.print(HexConverter::UIntToHexStringWithLiteral(ThisGateway::ID));
+    Serial.println();
+
+    // Pulling sensor node data from the database ----------------------
 
     int httpCode;
     const String payload = post.getStringPayload("get_node_hex_table.php", &httpCode);
@@ -90,7 +98,8 @@ void setup()
     {
         Serial.println("[M] Getting payload successful. Loading sensor data...");
 
-        DynamicJsonDocument document{5000};
+        // StaticJsonDocument<5000> document;
+        DynamicJsonDocument document{5000}; // Change this later to static document to reduce heap fragmentation
 
         DeserializationError deserializationError = deserializeJson(document, payload.c_str());
 
@@ -116,6 +125,8 @@ void setup()
             Serial.println("[M] Loading data done.");
         }
     }
+
+    // -----------------------------------------------------------------
 }
 
 void loop()
@@ -287,6 +298,8 @@ void loop()
     if (messagePayload.isSet())
     {
         // Process payload here
+
+        messagePayload.unloadPayload();
     }
 }
 
