@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "HexConverter.h"
 
-uint32_t HexConverter::hexStringToUInt(String hexString)
+const uint32_t HexConverter::hexStringToUInt(String hexString)
 {
     // Removes "0x" in the beginning of the string, if any
     if (hexString.startsWith("0x"))
@@ -67,7 +67,7 @@ const String HexConverter::UIntToHexString(const uint32_t integer, unsigned int 
     
     String s;
 
-    bool significantDigitHasBeenReached = false;
+    bool hasReachedSignificantDigit = false;
     for (size_t exponent = MAXIMUM_HEX_DIGIT - 1, iteration = 0; exponent < MAXIMUM_HEX_DIGIT; --exponent, ++iteration)
     {
         uint32_t filteredHexDigit;
@@ -78,11 +78,11 @@ const String HexConverter::UIntToHexString(const uint32_t integer, unsigned int 
         // Assumes significant digit has been found when it reached the total number of digits specified by the function argument
         if (totalDigit >= MAXIMUM_HEX_DIGIT - iteration)
         {
-            significantDigitHasBeenReached = true;
+            hasReachedSignificantDigit = true;
         }
 
         // Skips adding '0' to the beginning of the string unless specified by the function argument
-        if (!significantDigitHasBeenReached)
+        if (!hasReachedSignificantDigit)
         {
             if (!filteredHexDigit)
             {
@@ -90,7 +90,7 @@ const String HexConverter::UIntToHexString(const uint32_t integer, unsigned int 
             }
             else
             {
-                significantDigitHasBeenReached = true;
+                hasReachedSignificantDigit = true;
             }
         }
 

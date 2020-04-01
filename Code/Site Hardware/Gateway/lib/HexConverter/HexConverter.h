@@ -11,9 +11,9 @@ public:
 
     static const unsigned int MAXIMUM_HEX_DIGIT = 8;
 
-    static uint32_t hexStringToUInt(String hexString);
+    static const uint32_t hexStringToUInt(String hexString);
     static const String UIntToHexString(const uint32_t integer, unsigned int totalDigit = 1U);
-    static inline const String UIntToHexStringWithLiteral(const uint32_t integer, const unsigned int totalDigit = 1U)
+    static const String UIntToHexStringWithLiteral(const uint32_t integer, const unsigned int totalDigit = 1U)
     {
         return "0x" + UIntToHexString(integer, totalDigit);
     }
