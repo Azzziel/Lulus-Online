@@ -1,20 +1,11 @@
 #include <Arduino.h>
 #include "PayloadHandler.h"
 
-PayloadHandler::PayloadHandler(const char separator) : payloadSeparator{separator}
-{
-}
-
-PayloadHandler::~PayloadHandler()
-{
-    unloadPayload();
-}
-
 void PayloadHandler::loadPayload(const String *const payload)
 {
     unloadPayload();
 
-    loadPayloadSize(payload);
+    countPayloadSize(payload);
 
     payloadArray = new String[getPayloadSize()];
 
@@ -34,11 +25,6 @@ void PayloadHandler::loadPayload(const String *const payload)
     }
 }
 
-void PayloadHandler::loadPayloadSize(const String *const payload)
-{
-    payloadSize = countSeparator(payload) + 1;
-}
-
 unsigned int PayloadHandler::countSeparator(const String *const payload) const
 {
     unsigned int separatorCount = 0;
@@ -52,14 +38,6 @@ unsigned int PayloadHandler::countSeparator(const String *const payload) const
     }
 
     return separatorCount;
-}
-
-void PayloadHandler::unloadPayload()
-{
-    payloadSize = 0;
-
-    delete[] payloadArray;
-    payloadArray = nullptr;
 }
 
 const String &PayloadHandler::operator[](unsigned int index) const
@@ -78,4 +56,12 @@ const String &PayloadHandler::operator[](unsigned int index) const
     }
 
     return payloadArray[index];
+}
+
+void PayloadHandler::unloadPayload()
+{
+    payloadSize = 0;
+
+    delete[] payloadArray;
+    payloadArray = nullptr;
 }

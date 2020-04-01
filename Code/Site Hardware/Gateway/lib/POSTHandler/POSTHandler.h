@@ -8,7 +8,7 @@ class POSTHandler
 {
 public:
     POSTHandler(HTTPClient *const httpClient, const char *const hostingUrl, const char *const phpAuthenticationKey);
-    ~POSTHandler();
+    ~POSTHandler() { clearRequestData(); }
 
     void resetRequestData();
     void addRequestData(const char *const arrayKeyName, const char *const arrayValue);
@@ -16,7 +16,7 @@ public:
     const String getStringPayload(const char *const phpFilename, int *const httpResponseCode);
 
 private:
-    void clearRequestDataFromHeap();
+    void clearRequestData();
 
     HTTPClient *const http;
     const String url;

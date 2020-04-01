@@ -41,11 +41,11 @@ SensorNode::operator String() const
     string += "\r\n";
 
     string += "[N] Init'd\t: ";
-    string += getInitializationStatus();
+    string += getInitializationStatus() ? "YES" : "NO";
     string += "\r\n";
 
     string += "[N] Status\t: ";
-    string += getNodeStatus();
+    string += getNodeStatus() ? "PARKED" : "EMPTY";
     string += "\r\n";
 
     string += "[N] Battery\t: ";

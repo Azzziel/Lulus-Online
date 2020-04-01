@@ -8,14 +8,9 @@ POSTHandler::POSTHandler(HTTPClient *const httpClient, const char *const hosting
     resetRequestData();
 }
 
-POSTHandler::~POSTHandler()
-{
-    clearRequestDataFromHeap();
-}
-
 void POSTHandler::resetRequestData()
 {
-    clearRequestDataFromHeap();
+    clearRequestData();
     requestData = new String();
 
     *requestData += "auth_key=";
@@ -45,7 +40,7 @@ const String POSTHandler::getStringPayload(const char *phpFilename, int *httpRes
     return payload;
 }
 
-void POSTHandler::clearRequestDataFromHeap()
+void POSTHandler::clearRequestData()
 {
     delete requestData;
     requestData = nullptr;
