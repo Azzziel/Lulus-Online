@@ -7,68 +7,43 @@
 class SensorNode
 {
 public:
-    SensorNode();
-    ~SensorNode();
-
-    inline void begin(const bool status, const unsigned int battery, const String &id, const String &display)
+    void begin(const bool status, const unsigned int battery, const String &id, const String &display)
     {
         begin(status, battery, HexConverter::hexStringToUInt(id), HexConverter::hexStringToUInt(display));
     }
 
     void begin(const bool status, const unsigned int battery, const unsigned int id, const unsigned int display);
+    void end();
 
-    inline bool getNodeStatus() const
-    {
-        return nodeStatus;
-    }
+    void setNodeStatus(const bool status) { nodeStatus = status; }
+    const bool getNodeStatus() const { return nodeStatus; }
+    void flipNodeStatus() { setNodeStatus(!getNodeStatus()); }
 
-    void setNodeStatus(const bool status);
+    void setNodeBattery(const unsigned int battery) { nodeBattery = battery; }
+    const unsigned int getNodeBattery() const { return nodeBattery; }
 
-    inline void flipNodeStatus()
-    {
-        setNodeStatus(!getNodeStatus());
-    }
+    const bool checkNodeID(const unsigned int id) const { return id == getNodeID(); }
+    const bool checkNodeID(const String &id) const { return checkNodeID(HexConverter::hexStringToUInt(id)); }
 
-    inline unsigned int getNodeBattery() const
-    {
-        return nodeBattery;
-    }
+    const unsigned int getNodeID() const { return nodeID; }
+    const String getNodeIDHexString() const { return HexConverter::UIntToHexStringWithLiteral(nodeID, 4); }
 
-    void setNodeBattery(const unsigned int battery);
+    const unsigned int getDisplayID() const { return nodeDisplay; }
+    const String getDisplayIDHexString() const { return HexConverter::UIntToHexStringWithLiteral(nodeDisplay, 4); }
 
-    inline bool checkNodeID(const unsigned int id) const
-    {
-        return id == getNodeID();
-    }
-
-    inline unsigned int getNodeID() const
-    {
-        return nodeID;
-    }
-
-    inline unsigned int getMatrixNodePointsTo() const
-    {
-        return nodeDisplay;
-    }
-
-    void initialize();
-
-    inline bool getInitializationStatus() const
-    {
-        return isInitialized;
-    }
+    void setInitializationStatus(const bool status);
+    const bool getInitializationStatus() const { return isInitialized; }
 
     operator String() const;
 
-    static inline unsigned int getNodeCount()
-    {
-        return nodeCount;
-    }
+    static unsigned int getTotalNumberOfNodes() { return totalNumberOfNodes; }
+    static unsigned int getTotalNumberOfInitializedNodes() { return totalNumberOfInitializedNodes; }
 
 private:
-    static unsigned int nodeCount;
+    static unsigned int totalNumberOfNodes;
+    static unsigned int totalNumberOfInitializedNodes;
 
-    bool isInitialized = false;
+    bool isInitialized{};
 
     bool nodeStatus{};
     unsigned int nodeBattery{};

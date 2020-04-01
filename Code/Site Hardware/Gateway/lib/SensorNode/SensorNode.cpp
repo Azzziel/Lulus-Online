@@ -3,17 +3,8 @@
 
 #include <HexConverter.h>
 
-unsigned int SensorNode::nodeCount{};
-
-SensorNode::SensorNode()
-{
-    ++nodeCount;
-}
-
-SensorNode::~SensorNode()
-{
-    --nodeCount;
-}
+unsigned int SensorNode::totalNumberOfNodes{};
+unsigned int SensorNode::totalNumberOfInitializedNodes{};
 
 void SensorNode::begin(const bool status, const unsigned int battery, const unsigned int id, const unsigned int display)
 {
@@ -23,29 +14,34 @@ void SensorNode::begin(const bool status, const unsigned int battery, const unsi
         nodeBattery = battery;
         nodeID = id;
         nodeDisplay = display;
+
+        ++totalNumberOfNodes;
     }
 }
 
-void SensorNode::setNodeStatus(const bool status)
+void SensorNode::end()
 {
-    nodeStatus = status;
-}
+    if (nodeID)
+    {
+        nodeStatus = false;
+        nodeBattery = false;
+        nodeID = false;
+        nodeDisplay = false;
 
-void SensorNode::setNodeBattery(const unsigned int battery)
-{
-    nodeBattery = battery;
+        --totalNumberOfNodes;
+    }
 }
 
 SensorNode::operator String() const
 {
     String string;
 
-    string += "[N] ID (HEX)\t: ";
-    string += HexConverter::UIntToHexStringWithLiteral(getNodeID(), 4);
+    string += "[N] ID\t: ";
+    string += getNodeIDHexString();
     string += "\r\n";
 
-    string += "[N] Initialized\t: ";
-    string += getInitializationStatus() ? "YES" : "NO";
+    string += "[N] Init'd\t: ";
+    string += getInitializationStatus();
     string += "\r\n";
 
     string += "[N] Status\t: ";
@@ -56,14 +52,26 @@ SensorNode::operator String() const
     string += getNodeBattery();
     string += "\r\n";
 
-    string += "[N] Display (HEX)\t: ";
-    string += HexConverter::UIntToHexStringWithLiteral(getMatrixNodePointsTo(), 4);
+    string += "[N] Display\t: ";
+    string += getDisplayIDHexString();
     string += "\r\n";
 
     return string;
 }
 
-void SensorNode::initialize()
+void SensorNode::setInitializationStatus(const bool status)
 {
-    isInitialized = true;
+    if (isInitialized != status)
+    {
+        if (status)
+        {
+            isInitialized = true;
+            ++totalNumberOfInitializedNodes;
+        }
+        else
+        {
+            isInitialized = false;
+            --totalNumberOfInitializedNodes;
+        }
+    }
 }
