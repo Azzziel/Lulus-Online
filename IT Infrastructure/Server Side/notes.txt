@@ -1,0 +1,14 @@
+Some help through the journey
+
+terminal command
+-------------------
+npm init                        || to make the package.json 
+npm install express --save      || to install package
+node server.json                || to run the program
+npm start                       || also to run the program but with nodemon help (load the server every save)
+
+
+HOW-TO
+-------
+Finding and changing an object inside an array
+https://stackoverflow.com/questions/4689856/how-to-change-value-of-object-which-is-inside-an-array-using-javascript-or-jquer/50504081

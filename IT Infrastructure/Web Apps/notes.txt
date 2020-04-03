@@ -1,0 +1,31 @@
+Some help through the journey
+
+Hotkey Command
+------------------
+npm run serve       || Run the server. open http://localhost:8080/
+ctrl + c            || Terminate the running server
+
+Vue Installation
+------------------
+1. Install the Vue.
+Terminal : "npm install @vue/cli"
+2. Create the Vue workspace
+Terminal : "vue create dashboard-app"
+//////////////////////// or
+1. Install it locally with npx
+Terminal "npx @vue/cli create dashboard-app"
+
+3. Filling the setup question
+> Pick a preset — Manually select features
+> Check the features needed — Babel, Router, CSS Pre-processors, Linter/Formatter
+> History mode — Y  || remove the default # on the URL
+> CSS pre-processor — Sass/SCSS (with dart-sass)        || dart-sass is the primary implementation of Sass
+> Pick a linter/formatter -—ESLint with error prevention only
+> Additional lint features — Lint and fix on commit
+> Config location — In dedicated config files
+> Save as preset — N
+
+
+BootstrapVue
+--------------
+https://bootstrap-vue.js.org/docs
