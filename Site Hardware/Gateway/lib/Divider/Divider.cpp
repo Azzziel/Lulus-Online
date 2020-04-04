@@ -1,31 +1,34 @@
 #include <Arduino.h>
 #include "Divider.h"
 
-void Divider::loadDivider(const unsigned int amountToBeDivided, const unsigned int divider)
+void Divider::loadDivider(const unsigned int amount, const unsigned int divider)
 {
     if (divider == 0)
         return;
 
     clearArray();
 
-    if (amountToBeDivided % divider == 0)
+    this->amount = amount;
+    this->divider = divider;
+
+    if (amount % divider == 0)
     {
-        arraySize = amountToBeDivided / divider;
+        arraySize = amount / divider;
     }
     else
     {
-        arraySize = (amountToBeDivided / divider) + 1;
+        arraySize = (amount / divider) + 1;
     }
 
     array = new unsigned int[getArraySize()];
 
     if (getArraySize() == 1)
     {
-        array[0] = amountToBeDivided;
+        array[0] = amount;
     }
     else
     {
-        if (amountToBeDivided % divider == 0)
+        if (amount % divider == 0)
         {
             for (size_t index = 0; index < getArraySize(); ++index)
             {
@@ -36,9 +39,9 @@ void Divider::loadDivider(const unsigned int amountToBeDivided, const unsigned i
         {
             for (size_t index = 0; index < getArraySize(); ++index)
             {
-                if (index == getArraySize() - 1)
+                if (index >= getArraySize() - 1)
                 {
-                    array[index] = amountToBeDivided % divider;
+                    array[index] = amount % divider;
                 }
                 else
                 {
@@ -51,7 +54,13 @@ void Divider::loadDivider(const unsigned int amountToBeDivided, const unsigned i
 
 void Divider::printArray() const
 {
-    Serial.print(F("[A] "));
+    Serial.print("[D] ");
+    Serial.print(amount);
+    Serial.print(" / ");
+    Serial.print(divider);
+    Serial.println();
+    
+    Serial.print("[A] ");
 
     for (size_t index = 0; index < getArraySize(); ++index)
     {
@@ -68,6 +77,9 @@ void Divider::printArray() const
 
 void Divider::clearArray()
 {
+    amount = 0;
+    divider = 0;
+
     arraySize = 0;
 
     delete[] array;
