@@ -33,7 +33,7 @@ Node_ID ID;
 
 namespace Query
 {
-const unsigned int LIMIT = 4U;
+const unsigned int LIMIT = 32U;
 
 unsigned int index = 1U;
 unsigned int pointer = 0U;
@@ -84,8 +84,7 @@ void setup()
             delay(0);
     }
 
-    Query::pointer = divider.getArraySize() - 1;
-
+    Node_SensorNode::setPointerToTheFirstNode();
     while (Query::pointer < divider.getArraySize())
     {
         post.addRequestData("query_index", String(Query::index).c_str());
@@ -101,7 +100,7 @@ void setup()
 
             if (deserializationError)
             {
-                Serial.print("[M][E] Deserialization error: ");
+                Serial.print(F("[M][E] Deserialization error: "));
                 Serial.print(deserializationError.c_str());
                 Serial.println();
 
@@ -110,9 +109,23 @@ void setup()
             }
             else
             {
-                // Cum here
+                for (size_t index = 0; index < document.size(); ++index)
+                {
+                    if (Node_SensorNode::getPointer() >= Node_SensorNode::getTotalNumberOfNodeObjects())
+                    {
+                        Serial.println("[M][E] Node objects are not enough");
 
-                Serial.println("[M] Loading data done");
+                        while (1) // Halt operation
+                            delay(0);
+                    }
+
+                    sensorNodes[Node_SensorNode::getPointer()].begin(
+                        HexConverter::hexStringToUShort(document[index]["node_id"]),
+                        HexConverter::hexStringToUShort(document[index]["rptr_rt"]),
+                        HexConverter::hexStringToUShort(document[index]["disp_rt"]));
+
+                    Node_SensorNode::preincrementPointer();
+                }
             }
         }
         else
@@ -127,12 +140,23 @@ void setup()
         ++Query::pointer;
     }
 
+    Serial.println(F("[M] Loading data done"));
+
     Query::index = 1U;
     Query::pointer = 0U;
 
     divider.clearArray();
 
     digitalWrite(BUILTIN_LED, LOW);
+
+    Node_SensorNode::printTableHeader();
+    for (
+        Node_SensorNode::setPointerToTheFirstNode();
+        Node_SensorNode::getPointer() < Node_SensorNode::getTotalNumberOfNodes();
+        Node_SensorNode::preincrementPointer())
+    {
+        sensorNodes[Node_SensorNode::getPointer()].printTable();
+    }
 }
 
 void loop()

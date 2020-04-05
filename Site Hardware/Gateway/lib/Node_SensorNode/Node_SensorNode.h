@@ -7,6 +7,9 @@
 class Node_SensorNode
 {
 public:
+    Node_SensorNode() { ++totalNumberOfNodeObjects; }
+    ~Node_SensorNode() { --totalNumberOfNodeObjects; }
+
     void begin(const String &id, const String &repeater, const String &display)
     {
         begin(HexConverter::hexStringToUInt(id), HexConverter::hexStringToUInt(repeater), HexConverter::hexStringToUInt(display));
@@ -38,12 +41,29 @@ public:
     void uninitialize();
     const bool getInitializationStatus() const { return isInitialized; }
 
-    static unsigned int getTotalNumberOfNodes() { return totalNumberOfNodes; }
-    static unsigned int getTotalNumberOfInitializedNodes() { return totalNumberOfInitializedNodes; }
+    void printTable();
+
+    static void printTableHeader();
+
+    static void setPointerToTheFirstNode() { nodePointer = 0U; }
+    static void setPointerToTheLastNode();
+
+    static const unsigned int preincrementPointer();
+    static const unsigned int postincrementPointer();
+
+    static const unsigned int predecrementPointer();
+    static const unsigned int postdecrementPointer();
+
+    static const unsigned int getPointer() { return nodePointer; }
+    static const unsigned int getTotalNumberOfNodes() { return totalNumberOfNodes; }
+    static const unsigned int getTotalNumberOfInitializedNodes() { return totalNumberOfInitializedNodes; }
+    static const unsigned int getTotalNumberOfNodeObjects() { return totalNumberOfNodeObjects; }
 
 private:
+    static unsigned int nodePointer;
     static unsigned int totalNumberOfNodes;
     static unsigned int totalNumberOfInitializedNodes;
+    static unsigned int totalNumberOfNodeObjects;
 
     bool isInitialized{};
 
