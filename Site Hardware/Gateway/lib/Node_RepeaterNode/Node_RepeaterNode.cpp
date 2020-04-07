@@ -3,6 +3,7 @@
 
 #include <HexConverter.h>
 
+unsigned int Node_RepeaterNode::pointer{};
 unsigned int Node_RepeaterNode::totalNumberOfRepeaters{};
 unsigned int Node_RepeaterNode::totalNumberOfRepeaterObjects{};
 

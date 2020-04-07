@@ -3,6 +3,7 @@
 
 #include <HexConverter.h>
 
+unsigned int Node_DisplayNode::pointer{};
 unsigned int Node_DisplayNode::totalNumberOfDisplays{};
 unsigned int Node_DisplayNode::totalNumberOfDisplayObjects{};
 
