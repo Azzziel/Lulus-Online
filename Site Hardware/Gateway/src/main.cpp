@@ -13,6 +13,8 @@
 #include <POSTHandler.h>
 #include <PayloadHandler.h>
 #include <Divider.h>
+#include <Node_DisplayNode.h>
+#include <Node_RepeaterNode.h>
 #include <Node_SensorNode.h>
 #include <Node_ID.h>
 
@@ -41,6 +43,12 @@ unsigned int pointer = 0U;
 
 // Access this array only by the class-provided pointer
 Node_SensorNode sensorNodes[512U];
+
+// Access this array only by the class-provided pointer
+Node_RepeaterNode repeaterNodes[32U];
+
+// Access this array only by the class-provided pointer
+Node_DisplayNode displayNodes[32U];
 
 Divider divider;
 
@@ -96,7 +104,7 @@ void setup()
 
         if (httpCode == t_http_codes::HTTP_CODE_OK)
         {
-            StaticJsonDocument<3584> document; // Be generous for 32 nodes
+            StaticJsonDocument<3584> document;
             DeserializationError deserializationError = deserializeJson(document, payload.c_str());
 
             if (deserializationError)
@@ -122,7 +130,6 @@ void setup()
 
                     sensorNodes[Node_SensorNode::getPointer()].begin(
                         HexConverter::hexStringToUShort(document[index]["node_id"]),
-                        HexConverter::hexStringToUShort(document[index]["rptr_rt"]),
                         HexConverter::hexStringToUShort(document[index]["disp_rt"]));
 
                     Node_SensorNode::preincrementPointer();

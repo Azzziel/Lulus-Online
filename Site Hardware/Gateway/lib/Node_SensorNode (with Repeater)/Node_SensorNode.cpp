@@ -8,11 +8,12 @@ unsigned int Node_SensorNode::totalNumberOfNodes{};
 unsigned int Node_SensorNode::totalNumberOfInitializedNodes{};
 unsigned int Node_SensorNode::totalNumberOfNodeObjects{};
 
-void Node_SensorNode::begin(const unsigned int id, const unsigned int display)
+void Node_SensorNode::begin(const unsigned int id, const unsigned int repeater, const unsigned int display)
 {
     if (!nodeID)
     {
         nodeID = id;
+        nodeRepeater = repeater;
         nodeDisplay = display;
 
         ++totalNumberOfNodes;
@@ -26,6 +27,7 @@ void Node_SensorNode::end()
         nodeStatus = false;
         nodeBattery = false;
         nodeID = false;
+        nodeRepeater = false;
         nodeDisplay = false;
 
         --totalNumberOfNodes;
@@ -63,6 +65,8 @@ void Node_SensorNode::printTableHeader()
 
     Serial.print("N_ID");
     Serial.print('\t');
+    Serial.print("R_ID");
+    Serial.print('\t');
     Serial.print("D_ID");
     Serial.print('\t');
     Serial.print("INIT");
@@ -80,6 +84,8 @@ void Node_SensorNode::printTable()
     Serial.print('\t');
 
     Serial.print(getNodeIDInHexString());
+    Serial.print('\t');
+    Serial.print(getRepeaterIDInHexString());
     Serial.print('\t');
     Serial.print(getDisplayIDInHexString());
     Serial.print('\t');

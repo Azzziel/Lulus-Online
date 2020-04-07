@@ -10,12 +10,12 @@ public:
     Node_SensorNode() { ++totalNumberOfNodeObjects; }
     ~Node_SensorNode() { --totalNumberOfNodeObjects; }
 
-    void begin(const String &id, const String &display)
+    void begin(const String &id, const String &repeater, const String &display)
     {
-        begin(HexConverter::hexStringToUInt(id), HexConverter::hexStringToUInt(display));
+        begin(HexConverter::hexStringToUInt(id), HexConverter::hexStringToUInt(repeater), HexConverter::hexStringToUInt(display));
     }
 
-    void begin(const unsigned int id, const unsigned int display);
+    void begin(const unsigned int id, const unsigned int repeater, const unsigned int display);
     void end();
 
     void setNodeStatus(const bool status) { nodeStatus = status; }
@@ -30,6 +30,9 @@ public:
 
     const unsigned int getNodeID() const { return nodeID; }
     const String getNodeIDInHexString() const { return HexConverter::UIntToHexString(getNodeID(), 4); }
+
+    const unsigned int getRepeaterID() const { return nodeRepeater; }
+    const String getRepeaterIDInHexString() const { return HexConverter::UIntToHexString(getRepeaterID(), 4); }
 
     const unsigned int getDisplayID() const { return nodeDisplay; }
     const String getDisplayIDInHexString() const { return HexConverter::UIntToHexString(getDisplayID(), 4); }
@@ -57,6 +60,7 @@ private:
     unsigned int nodeBattery{};
 
     unsigned int nodeID{};
+    unsigned int nodeRepeater{};
     unsigned int nodeDisplay{};
 
     // ---------------------------------------------------------------------------------------------------
