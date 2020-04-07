@@ -39,6 +39,7 @@ unsigned int index = 1U;
 unsigned int pointer = 0U;
 } // namespace Query
 
+// Access this array only by the class-provided pointer
 Node_SensorNode sensorNodes[512U];
 
 Divider divider;
@@ -113,7 +114,7 @@ void setup()
                 {
                     if (Node_SensorNode::getPointer() >= Node_SensorNode::getTotalNumberOfNodeObjects())
                     {
-                        Serial.println("[M][E] Node objects are not enough");
+                        Serial.println(F("[M][E] Node objects are not enough to contain the devices"));
 
                         while (1) // Halt operation
                             delay(0);

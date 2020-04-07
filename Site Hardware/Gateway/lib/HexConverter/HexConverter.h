@@ -16,10 +16,7 @@ public:
     static const uint8_t hexStringToUChar(String hexString) { return static_cast<uint8_t>(hexStringToUInt(hexString)); }
 
     static const String UIntToHexString(const uint32_t integer, unsigned int totalDigit = 1U);
-    static const String UIntToHexStringWithLiteral(const uint32_t integer, const unsigned int totalDigit = 1U)
-    {
-        return "0x" + UIntToHexString(integer, totalDigit);
-    }
+    static const String UIntToHexStringWithLiteral(const uint32_t integer, const unsigned int totalDigit = 1U) { return "0x" + UIntToHexString(integer, totalDigit); }
 };
 
 #endif

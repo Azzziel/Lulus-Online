@@ -45,22 +45,11 @@ public:
 
     static void printTableHeader();
 
-    static void setPointerToTheFirstNode() { nodePointer = 0U; }
-    static void setPointerToTheLastNode();
-
-    static const unsigned int preincrementPointer();
-    static const unsigned int postincrementPointer();
-
-    static const unsigned int predecrementPointer();
-    static const unsigned int postdecrementPointer();
-
-    static const unsigned int getPointer() { return nodePointer; }
     static const unsigned int getTotalNumberOfNodes() { return totalNumberOfNodes; }
     static const unsigned int getTotalNumberOfInitializedNodes() { return totalNumberOfInitializedNodes; }
     static const unsigned int getTotalNumberOfNodeObjects() { return totalNumberOfNodeObjects; }
 
 private:
-    static unsigned int nodePointer;
     static unsigned int totalNumberOfNodes;
     static unsigned int totalNumberOfInitializedNodes;
     static unsigned int totalNumberOfNodeObjects;
@@ -73,6 +62,23 @@ private:
     unsigned int nodeID{};
     unsigned int nodeRepeater{};
     unsigned int nodeDisplay{};
+
+    // ---------------------------------------------------------------------------------------------------
+
+public:
+    static void setPointerToTheFirstNode() { nodePointer = 0U; }
+    static void setPointerToTheLastNode();
+
+    static const unsigned int preincrementPointer();
+    static const unsigned int postincrementPointer();
+
+    static const unsigned int predecrementPointer();
+    static const unsigned int postdecrementPointer();
+
+    static const unsigned int getPointer() { return nodePointer; }
+
+private:
+    static unsigned int nodePointer;
 };
 
 #endif
