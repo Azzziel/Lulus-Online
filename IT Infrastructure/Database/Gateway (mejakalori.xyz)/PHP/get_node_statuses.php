@@ -34,7 +34,7 @@ if ($node_id === 'all') {
     exit();
 }
 
-$query = "SELECT `n_stats` FROM `node_statuses` WHERE `node_id`='$node_id AND `on_serv`=true' LIMIT 1";
+$query = "SELECT `n_stats` FROM `node_statuses` WHERE `node_id`='$node_id' AND `on_serv`=true LIMIT 1";
 $result = $mysqli->query($query);
 
 echo $result->fetch_row()[0];

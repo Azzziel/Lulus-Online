@@ -24,8 +24,7 @@ $query = "INSERT INTO `node_batteries` (`node_id`, `battery`) VALUES ('$node_id'
 
 if ($result = $mysqli->query($query)) {
     echo 'SUCCESS';
-}
-else {
+} else {
     echo 'FAILED';
 }
 

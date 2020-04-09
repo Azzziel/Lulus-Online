@@ -24,8 +24,7 @@ $query = "INSERT INTO `node_statuses` (`node_id`, `n_stats`) VALUES ('$node_id',
 
 if ($result = $mysqli->query($query)) {
     echo 'SUCCESS';
-}
-else {
+} else {
     echo 'FAILED';
 }
 
