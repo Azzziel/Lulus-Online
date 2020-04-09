@@ -9,15 +9,15 @@ if (($auth_key != $_GET['auth_key']) && ($auth_key != $_POST['auth_key'])) {
     exit();
 }
 
-$query = "SELECT COUNT(*) FROM `node_devices` WHERE `on_serv`=true LIMIT 1";
-$result = $mysqli->query($query);
-$row = $result->fetch_row()[0];
+$query = "
+SELECT `rptr_id`, 
+       `send_rt` 
+FROM   `node_repeaters` 
+WHERE  `on_serv`=true";
 
-if (isset($row)) {
-    echo $row;
-} else {
-    echo '0';
-}
+$result = $mysqli->query($query);
+
+echo json_encode($result->fetch_all(MYSQLI_ASSOC));
 
 $result->close();
 $mysqli->close();

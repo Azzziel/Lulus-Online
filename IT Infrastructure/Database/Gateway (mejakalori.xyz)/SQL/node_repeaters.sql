@@ -1,9 +1,21 @@
 DROP TABLE IF EXISTS `u216319883_nodesens_db`.`node_repeaters`;
 CREATE TABLE `u216319883_nodesens_db`.`node_repeaters`
 (
-  `index` SMALLINT UNSIGNED AUTO_INCREMENT NOT NULL,
+  `index` TINYINT UNSIGNED AUTO_INCREMENT NOT NULL,
   `rptr_id` CHAR(4) NOT NULL,
+
+  -- -------------------------------------------------------
+  /* 
+   * The `send_rt` column can refer to either a repeater
+   * or a gateway. Thus, it is impossible to do two foreign
+   * key references to serve the true purpose of the column.
+   * ALternatively, just be careful on inserting them or
+   * find a new-revolutionary way to refer them both.
+   */
   `send_rt` CHAR(4) NOT NULL,
+  -- -------------------------------------------------------
+
+  `on_serv` BOOLEAN NOT NULL,
   PRIMARY KEY (`index`),
   UNIQUE `UNIQUE_ID` (`rptr_id`)
 ) ENGINE = InnoDB;
@@ -11,8 +23,9 @@ CREATE TABLE `u216319883_nodesens_db`.`node_repeaters`
 INSERT INTO `u216319883_nodesens_db`.`node_repeaters`
 (
   `rptr_id`,
-  `send_rt`
+  `send_rt`,
+  `on_serv`
 )
 VALUES
-('AA01', 'A001'),
-('AA02', 'AA01');
+('AA01', 'AAA1', true),
+('AA02', 'AA01', true);

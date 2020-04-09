@@ -88,8 +88,6 @@ void setup()
 
     // Query of Display Nodes ----------------------------------------------------
     {
-        post.addRequestData("query_limit", String(Query::LIMIT).c_str());
-
         int httpCode;
         const String payload = post.getStringPayload("get_display_nodes.php", &httpCode);
 
@@ -140,8 +138,6 @@ void setup()
 
     // Query of Repeater Nodes ----------------------------------------------------
     {
-        post.addRequestData("query_limit", String(Query::LIMIT).c_str());
-
         int httpCode;
         const String payload = post.getStringPayload("get_repeater_nodes.php", &httpCode);
 
@@ -268,7 +264,7 @@ void setup()
     }
     // ----------------------------------------------------------------------------
 
-    Serial.print(F("[M] Loading data done ("));
+    Serial.print(F("[M] Loading data from server done ("));
     Serial.print(millis() - queryStartMillis);
     Serial.print(F(" ms)"));
     Serial.println();
