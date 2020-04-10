@@ -66,8 +66,8 @@ private:
     // ---------------------------------------------------------------------------------------------------
 
 public:
-    static void setPointerToTheFirstNode() { pointer = 0U; }
-    static void setPointerToTheLastNode();
+    static void setPointerToHome() { pointer = 0U; }
+    static void setPointerToEnd();
 
     static const unsigned int preincrementPointer();
     static const unsigned int postincrementPointer();

@@ -55,7 +55,7 @@ void Node_RepeaterNode::printTable()
 
 // ---------------------------------------------------------------------------------------------------
 
-void Node_RepeaterNode::setPointerToTheLastRepeater()
+void Node_RepeaterNode::setPointerToEnd()
 {
     if (getTotalNumberOfRepeaterObjects())
     {

@@ -110,7 +110,7 @@ void setup()
     Query::loadStringPayload("get_repeater_nodes.php", Query::loadJsonPayload, Query::loadRepeaterNodes);
 
     Query::loadStringPayload("count_sensor_nodes.php", Query::getSensorCount, nullptr);
-    Node_SensorNode::setPointerToTheFirstNode();
+    Node_SensorNode::setPointerToHome();
     while (QueryByParts::pointer < dividedQuery.getArraySize())
     {
         post.addRequestData("query_index", String(QueryByParts::index).c_str());
@@ -196,7 +196,7 @@ void Query::loadJsonPayload(const String &stringPayload, void (*loadFunction)())
 
 void Query::loadDisplayNodes()
 {
-    Node_DisplayNode::setPointerToTheFirstDisplay();
+    Node_DisplayNode::setPointerToHome();
 
     for (size_t index = 0; index < Query::document.size(); ++index)
     {
@@ -218,7 +218,7 @@ void Query::loadDisplayNodes()
 
 void Query::loadRepeaterNodes()
 {
-    Node_RepeaterNode::setPointerToTheFirstRepeater();
+    Node_RepeaterNode::setPointerToHome();
 
     for (size_t index = 0; index < Query::document.size(); ++index)
     {
@@ -262,7 +262,7 @@ void printSensorNodes()
 {
     Node_SensorNode::printTableHeader();
     for (
-        Node_SensorNode::setPointerToTheFirstNode();
+        Node_SensorNode::setPointerToHome();
         Node_SensorNode::getPointer() < Node_SensorNode::getTotalNumberOfNodes();
         Node_SensorNode::preincrementPointer())
     {
@@ -274,7 +274,7 @@ void printRepeaterNodes()
 {
     Node_RepeaterNode::printTableHeader();
     for (
-        Node_RepeaterNode::setPointerToTheFirstRepeater();
+        Node_RepeaterNode::setPointerToHome();
         Node_RepeaterNode::getPointer() < Node_RepeaterNode::getTotalNumberOfRepeaters();
         Node_RepeaterNode::preincrementPointer())
     {
@@ -286,7 +286,7 @@ void printDisplayNodes()
 {
     Node_DisplayNode::printTableHeader();
     for (
-        Node_DisplayNode::setPointerToTheFirstDisplay();
+        Node_DisplayNode::setPointerToHome();
         Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
         Node_DisplayNode::preincrementPointer())
     {

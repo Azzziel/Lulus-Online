@@ -55,7 +55,7 @@ void Node_DisplayNode::printTable()
 
 // ---------------------------------------------------------------------------------------------------
 
-void Node_DisplayNode::setPointerToTheLastDisplay()
+void Node_DisplayNode::setPointerToEnd()
 {
     if (getTotalNumberOfDisplayObjects())
     {

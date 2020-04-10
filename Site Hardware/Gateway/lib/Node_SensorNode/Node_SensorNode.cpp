@@ -98,7 +98,7 @@ void Node_SensorNode::printTable()
 
 // ---------------------------------------------------------------------------------------------------
 
-void Node_SensorNode::setPointerToTheLastNode()
+void Node_SensorNode::setPointerToEnd()
 {
     if (getTotalNumberOfNodeObjects())
     {

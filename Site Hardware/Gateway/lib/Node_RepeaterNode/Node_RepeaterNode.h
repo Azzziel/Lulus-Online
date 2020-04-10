@@ -44,8 +44,8 @@ private:
     // ---------------------------------------------------------------------------------------------------
 
 public:
-    static void setPointerToTheFirstRepeater() { pointer = 0U; }
-    static void setPointerToTheLastRepeater();
+    static void setPointerToHome() { pointer = 0U; }
+    static void setPointerToEnd();
 
     static const unsigned int preincrementPointer();
     static const unsigned int postincrementPointer();
