@@ -3,11 +3,16 @@
 
 #include <HexConverter.h>
 
-unsigned int Node_RepeaterNode::pointer{};
 unsigned int Node_RepeaterNode::totalNumberOfRepeaters{};
 unsigned int Node_RepeaterNode::totalNumberOfRepeaterObjects{};
 
-void Node_RepeaterNode::begin(const unsigned int id, const unsigned int route)
+Node_RepeaterNode::~Node_RepeaterNode()
+{
+    end();
+    --totalNumberOfRepeaterObjects;
+}
+
+void Node_RepeaterNode::begin(const unsigned short id, const unsigned short route)
 {
     if (!repeaterID)
     {
@@ -54,6 +59,8 @@ void Node_RepeaterNode::printTable()
 }
 
 // ---------------------------------------------------------------------------------------------------
+
+unsigned int Node_RepeaterNode::pointer{};
 
 void Node_RepeaterNode::setPointerToEnd()
 {

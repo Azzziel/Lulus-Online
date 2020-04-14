@@ -16,6 +16,7 @@ if (empty($node_id)) {
 }
 
 if ($node_id === 'all') {
+    // Do not query this from a microcontroller
     $query = "
     SELECT `left_set`.`node_id`, 
            `left_set`.`n_stats` 
@@ -23,7 +24,8 @@ if ($node_id === 'all') {
            LEFT JOIN `node_statuses` `right_set` 
                   ON ( `left_set`.`node_id` = `right_set`.`node_id` 
                        AND `left_set`.`index` < `right_set`.`index` ) 
-    WHERE  `on_serv`=true AND `right_set`.`index` IS NULL";
+    WHERE  `right_set`.`index` IS NULL 
+    ORDER BY `node_id`";
 
     $result = $mysqli->query($query);
 
@@ -34,7 +36,7 @@ if ($node_id === 'all') {
     exit();
 }
 
-$query = "SELECT `n_stats` FROM `node_statuses` WHERE `node_id`='$node_id' AND `on_serv`=true LIMIT 1";
+$query = "SELECT `n_stats` FROM `node_statuses` WHERE `node_id`='$node_id' ORDER BY `t_stamp` DESC LIMIT 1";
 $result = $mysqli->query($query);
 
 echo $result->fetch_row()[0];

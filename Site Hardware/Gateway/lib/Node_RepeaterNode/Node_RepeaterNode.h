@@ -8,23 +8,23 @@ class Node_RepeaterNode
 {
 public:
     Node_RepeaterNode() { ++totalNumberOfRepeaterObjects; }
-    ~Node_RepeaterNode() { --totalNumberOfRepeaterObjects; }
+    ~Node_RepeaterNode();
 
     void begin(const String &id, const String &route)
     {
-        begin(HexConverter::hexStringToUInt(id), HexConverter::hexStringToUInt(route));
+        begin(HexConverter::hexStringToUShort(id), HexConverter::hexStringToUShort(route));
     }
 
-    void begin(const unsigned int id, const unsigned int route);
+    void begin(const unsigned short id, const unsigned short route);
     void end();
 
-    const bool operator==(const unsigned int id) const { return id == getRepeaterID(); }
-    const bool operator==(const String &id) const { return operator==(HexConverter::hexStringToUInt(id)); }
+    const bool operator==(const unsigned short id) const { return id == getRepeaterID(); }
+    const bool operator==(const String &id) const { return operator==(HexConverter::hexStringToUShort(id)); }
 
-    const unsigned int getRepeaterID() const { return repeaterID; }
+    const unsigned short getRepeaterID() const { return repeaterID; }
     const String getRepeaterIDInHexString() const { return HexConverter::UIntToHexString(repeaterID, 4); }
 
-    const unsigned int getRouteID() const { return repeaterRoute; }
+    const unsigned short getRouteID() const { return repeaterRoute; }
     const String getRouteIDInHexString() const { return HexConverter::UIntToHexString(repeaterRoute, 4); }
 
     void printTable();
@@ -38,8 +38,8 @@ private:
     static unsigned int totalNumberOfRepeaters;
     static unsigned int totalNumberOfRepeaterObjects;
 
-    unsigned int repeaterID{};
-    unsigned int repeaterRoute{};
+    unsigned short repeaterID{};
+    unsigned short repeaterRoute{};
 
     // ---------------------------------------------------------------------------------------------------
 

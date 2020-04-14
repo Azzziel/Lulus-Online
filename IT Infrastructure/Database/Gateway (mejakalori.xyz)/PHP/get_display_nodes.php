@@ -13,7 +13,7 @@ $query = "
 SELECT `disp_id`, 
        `recv_rt` 
 FROM   `node_displays` 
-WHERE `on_serv`=true";
+ORDER BY `disp_id`";
 
 $result = $mysqli->query($query);
 

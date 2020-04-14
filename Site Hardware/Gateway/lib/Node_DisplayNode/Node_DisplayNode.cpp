@@ -3,16 +3,21 @@
 
 #include <HexConverter.h>
 
-unsigned int Node_DisplayNode::pointer{};
 unsigned int Node_DisplayNode::totalNumberOfDisplays{};
 unsigned int Node_DisplayNode::totalNumberOfDisplayObjects{};
 
-void Node_DisplayNode::begin(const unsigned int id, const unsigned int route)
+Node_DisplayNode::~Node_DisplayNode()
+{
+    end();
+    --totalNumberOfDisplayObjects;
+}
+
+void Node_DisplayNode::begin(const unsigned short id, const String &route)
 {
     if (!displayID)
     {
         displayID = id;
-        displayRoute = route;
+        setDisplayRoute(route);
 
         ++totalNumberOfDisplays;
     }
@@ -23,10 +28,36 @@ void Node_DisplayNode::end()
     if (displayID)
     {
         displayID = false;
-        displayRoute = false;
+        unsetDisplayRoute();
 
         --totalNumberOfDisplays;
     }
+}
+
+void Node_DisplayNode::setDisplayRoute(const String &route)
+{
+    if (displayRoute == nullptr)
+    {
+        displayRoute = new const String(route);
+    }
+}
+
+void Node_DisplayNode::unsetDisplayRoute()
+{
+    delete displayRoute;
+    displayRoute = nullptr;
+}
+
+const String &Node_DisplayNode::getDisplayRoute()
+{
+    static const String ROUTE_UNSET PROGMEM = "ROUTE_UNSET";
+
+    if (displayRoute == nullptr)
+    {
+        return ROUTE_UNSET;
+    }
+
+    return *displayRoute;
 }
 
 void Node_DisplayNode::printTableHeader()
@@ -36,7 +67,7 @@ void Node_DisplayNode::printTableHeader()
 
     Serial.print("D_ID");
     Serial.print('\t');
-    Serial.print("ROUT");
+    Serial.print("COMPLETE_ROUTE");
 
     Serial.println();
 }
@@ -48,12 +79,14 @@ void Node_DisplayNode::printTable()
 
     Serial.print(getDisplayIDInHexString());
     Serial.print('\t');
-    Serial.print(getRouteIDInHexString());
+    Serial.print(getDisplayRoute());
 
     Serial.println();
 }
 
 // ---------------------------------------------------------------------------------------------------
+
+unsigned int Node_DisplayNode::pointer{};
 
 void Node_DisplayNode::setPointerToEnd()
 {

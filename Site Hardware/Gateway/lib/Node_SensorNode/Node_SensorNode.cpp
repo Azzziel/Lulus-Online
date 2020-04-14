@@ -3,12 +3,18 @@
 
 #include <HexConverter.h>
 
-unsigned int Node_SensorNode::pointer{};
 unsigned int Node_SensorNode::totalNumberOfNodes{};
-unsigned int Node_SensorNode::totalNumberOfInitializedNodes{};
 unsigned int Node_SensorNode::totalNumberOfNodeObjects{};
 
-void Node_SensorNode::begin(const unsigned int id, const unsigned int display)
+unsigned long Node_SensorNode::MAX_INACTIVE_PERIOD = 120000UL;
+
+Node_SensorNode::~Node_SensorNode()
+{
+    end();
+    --totalNumberOfNodeObjects;
+}
+
+void Node_SensorNode::begin(const unsigned short id, const unsigned short display)
 {
     if (!nodeID)
     {
@@ -32,28 +38,10 @@ void Node_SensorNode::end()
     }
 }
 
-void Node_SensorNode::initialize(const bool status, const bool battery)
+void Node_SensorNode::setNodeStatus(const bool status)
 {
-    if (!getInitializationStatus())
-    {
-        setNodeStatus(status);
-        setNodeBattery(battery);
-
-        isInitialized = true;
-        ++totalNumberOfInitializedNodes;
-    }
-}
-
-void Node_SensorNode::uninitialize()
-{
-    if (getInitializationStatus())
-    {
-        setNodeStatus(false);
-        setNodeBattery(false);
-
-        isInitialized = false;
-        --totalNumberOfInitializedNodes;
-    }
+    nodeStatus = status;
+    setLastReported();
 }
 
 void Node_SensorNode::printTableHeader()
@@ -65,11 +53,11 @@ void Node_SensorNode::printTableHeader()
     Serial.print('\t');
     Serial.print("D_ID");
     Serial.print('\t');
-    Serial.print("INIT");
+    Serial.print("BATT");
+    Serial.print('\t');
+    Serial.print("ACTV");
     Serial.print('\t');
     Serial.print("STAT");
-    Serial.print('\t');
-    Serial.print("BATT");
 
     Serial.println();
 }
@@ -83,20 +71,32 @@ void Node_SensorNode::printTable()
     Serial.print('\t');
     Serial.print(getDisplayIDInHexString());
     Serial.print('\t');
-    Serial.print(F(getInitializationStatus() ? "INIT" : "UNIN"));
 
-    if (getInitializationStatus())
+    if (getNodeBattery())
+    {
+        Serial.print("LV_");
+        Serial.print(getNodeBattery());
+    }
+    else
+    {
+        Serial.print("NO_B");
+    }
+
+    Serial.print('\t');
+    Serial.print(isActive() ? "ACTV" : "LOST");
+
+    if (isActive())
     {
         Serial.print('\t');
-        Serial.print(F(getNodeStatus() ? "PARK" : "EMPT"));
-        Serial.print('\t');
-        Serial.print(getNodeBattery());
+        Serial.print(getNodeStatus() ? "PARK" : "EMPT");
     }
 
     Serial.println();
 }
 
 // ---------------------------------------------------------------------------------------------------
+
+unsigned int Node_SensorNode::pointer{};
 
 void Node_SensorNode::setPointerToEnd()
 {

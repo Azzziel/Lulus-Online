@@ -15,9 +15,14 @@ $query_limit = $_POST['query_limit'];
 if ($query_index === 'all') {
     // Do not query this from a microcontroller
     $query = "
-    SELECT `node_id`, `disp_rt` 
-    FROM   `node_devices` 
-    ORDER  BY `node_id`";
+    SELECT `node_id`, 
+           `disp_rt`, 
+           (SELECT `battery` 
+            FROM   `node_batteries` 
+            WHERE  `node_id` = `node_devices`.`node_id`
+            ORDER  BY `t_stamp` DESC 
+            LIMIT  1) AS 'battery' 
+    FROM   `node_devices`";
 
     $result = $mysqli->query($query);
 
@@ -50,7 +55,12 @@ $filtered_query_index = $index_array[$query_index - 1];
 
 $query = "
 SELECT `node_id`, 
-       `disp_rt` 
+       `disp_rt`, 
+       (SELECT `battery` 
+        FROM   `node_batteries` 
+        WHERE  `node_id` = `node_devices`.`node_id`
+        ORDER  BY `t_stamp` DESC 
+        LIMIT  1) AS 'battery' 
 FROM   `node_devices` 
 WHERE  `node_devices`.`index` >= $filtered_query_index 
 ORDER  BY `node_id` 

@@ -12,8 +12,7 @@ if (($auth_key != $_GET['auth_key']) && ($auth_key != $_POST['auth_key'])) {
 $query = "
 SELECT `rptr_id`, 
        `send_rt` 
-FROM   `node_repeaters` 
-WHERE  `on_serv`=true";
+FROM   `node_repeaters`";
 
 $result = $mysqli->query($query);
 

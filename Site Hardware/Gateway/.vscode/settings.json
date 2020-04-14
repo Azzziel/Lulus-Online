@@ -3,6 +3,7 @@
         "array": "cpp",
         "string": "cpp",
         "functional": "cpp",
-        "streambuf": "cpp"
+        "streambuf": "cpp",
+        "vector": "cpp"
     }
 }

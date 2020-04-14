@@ -1,3 +1,5 @@
+#include <vector>
+
 #include <Arduino.h>
 
 #include <EEPROM.h>
@@ -35,7 +37,7 @@ Node_ID ID;
 
 namespace Query
 {
-StaticJsonDocument<2560> document;
+StaticJsonDocument<3840> document;
 
 void loadStringPayload(const char *, void (*)(const String &, void (*)()), void (*)());
 void getSensorCount(const String &, void (*)());
@@ -55,6 +57,14 @@ unsigned int index = 1U;
 unsigned int pointer = 0U;
 } // namespace QueryByParts
 
+namespace Message
+{
+const char START = '<';
+const char SEPARATOR = '/';
+const char SUBSEPARATOR = ':';
+const char END = '>';
+} // namespace Message
+
 // Access this array only by the class-provided pointer
 Node_SensorNode sensorNodes[512U];
 void printSensorNodes();
@@ -66,6 +76,9 @@ void printRepeaterNodes();
 // Access this array only by the class-provided pointer
 Node_DisplayNode displayNodes[32U];
 void printDisplayNodes();
+
+const String encodeDisplayRoute(const String &displayID, const String &receiverRouteID, const char separator);
+const String encodeDisplayRoute(const unsigned short displayID, const unsigned short receiverRouteID, const char separator);
 
 Divider dividedQuery;
 
@@ -94,20 +107,20 @@ void setup()
 
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     while (WiFi.status() != WL_CONNECTED)
-        delay(0);
+        delay(0U);
 
     post.addRequestData("gtwy_id", This::ID.getIDInHexString().c_str());
     Query::loadStringPayload("get_gateway_status.php", Query::getGatewayStatus, nullptr);
 
     Serial.print("[M] Gateway ID: ");
-    Serial.print(HexConverter::UIntToHexString(This::ID.getID()));
+    Serial.print(This::ID.getIDInHexString());
     Serial.println();
 
     const unsigned long queryStartMillis = millis();
 
     // Query ------------------------------------------------------------------------------------------
-    Query::loadStringPayload("get_display_nodes.php", Query::loadJsonPayload, Query::loadDisplayNodes);
     Query::loadStringPayload("get_repeater_nodes.php", Query::loadJsonPayload, Query::loadRepeaterNodes);
+    Query::loadStringPayload("get_display_nodes.php", Query::loadJsonPayload, Query::loadDisplayNodes);
 
     Query::loadStringPayload("count_sensor_nodes.php", Query::getSensorCount, nullptr);
     Node_SensorNode::setPointerToHome();
@@ -116,7 +129,7 @@ void setup()
         post.addRequestData("query_index", String(QueryByParts::index).c_str());
         post.addRequestData("query_limit", String(QueryByParts::LIMIT).c_str());
 
-        Query::loadStringPayload("get_sensor_nodes.php", Query::loadJsonPayload, Query::loadSensorNodes);
+        Query::loadStringPayload("get_sensor_nodes_with_battery.php", Query::loadJsonPayload, Query::loadSensorNodes);
 
         QueryByParts::index += dividedQuery[QueryByParts::pointer];
         ++QueryByParts::pointer;
@@ -132,8 +145,8 @@ void setup()
     // Turn the LED off, by this point it is proven that everything above has succeeded
     digitalWrite(BUILTIN_LED, LOW);
 
-    printDisplayNodes();
     printRepeaterNodes();
+    printDisplayNodes();
     printSensorNodes();
 }
 
@@ -154,8 +167,8 @@ void Query::loadStringPayload(const char *phpFilename, void (*stringLoader)(cons
     {
         Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
 
-        while (1) // Halt operation
-            delay(0);
+        while (true) // Halt operation
+            delay(0U);
     }
 }
 
@@ -170,8 +183,8 @@ void Query::getGatewayStatus(const String &stringPayload, void (*)())
     {
         Serial.println(F("[M][E] Gateway was not found in the database or may have reached its end of service"));
 
-        while (1) // Halt operation
-            delay(0);
+        while (true) // Halt operation
+            delay(0U);
     }
 }
 
@@ -185,8 +198,8 @@ void Query::loadJsonPayload(const String &stringPayload, void (*loadFunction)())
         Serial.print(deserializationError.c_str());
         Serial.println();
 
-        while (1) // Halt operation
-            delay(0);
+        while (true) // Halt operation
+            delay(0U);
     }
     else
     {
@@ -198,19 +211,22 @@ void Query::loadDisplayNodes()
 {
     Node_DisplayNode::setPointerToHome();
 
-    for (size_t index = 0; index < Query::document.size(); ++index)
+    for (size_t index = 0U; index < Query::document.size(); ++index)
     {
         if (Node_DisplayNode::getPointer() >= Node_DisplayNode::getTotalNumberOfDisplayObjects())
         {
             Serial.println(F("[M][E] Repeater objects are not enough to contain the devices"));
 
-            while (1) // Halt operation
-                delay(0);
+            while (true) // Halt operation
+                delay(0U);
         }
 
         displayNodes[Node_DisplayNode::getPointer()].begin(
-            HexConverter::hexStringToUShort(Query::document[index]["disp_id"]),
-            HexConverter::hexStringToUShort(Query::document[index]["recv_rt"]));
+            Query::document[index]["disp_id"].as<String>(),
+            encodeDisplayRoute(
+                Query::document[index]["disp_id"].as<String>(),
+                Query::document[index]["recv_rt"].as<String>(),
+                Message::SUBSEPARATOR));
 
         Node_DisplayNode::preincrementPointer();
     }
@@ -220,14 +236,14 @@ void Query::loadRepeaterNodes()
 {
     Node_RepeaterNode::setPointerToHome();
 
-    for (size_t index = 0; index < Query::document.size(); ++index)
+    for (size_t index = 0U; index < Query::document.size(); ++index)
     {
         if (Node_RepeaterNode::getPointer() >= Node_RepeaterNode::getTotalNumberOfRepeaterObjects())
         {
             Serial.println(F("[M][E] Repeater objects are not enough to contain the devices"));
 
-            while (1) // Halt operation
-                delay(0);
+            while (true) // Halt operation
+                delay(0U);
         }
 
         repeaterNodes[Node_RepeaterNode::getPointer()].begin(
@@ -240,22 +256,73 @@ void Query::loadRepeaterNodes()
 
 void Query::loadSensorNodes()
 {
-    for (size_t index = 0; index < Query::document.size(); ++index)
+    for (size_t index = 0U; index < Query::document.size(); ++index)
     {
         if (Node_SensorNode::getPointer() >= Node_SensorNode::getTotalNumberOfNodeObjects())
         {
             Serial.println(F("[M][E] Node objects are not enough to contain the devices"));
 
-            while (1) // Halt operation
-                delay(0);
+            while (true) // Halt operation
+                delay(0U);
         }
 
         sensorNodes[Node_SensorNode::getPointer()].begin(
             HexConverter::hexStringToUShort(Query::document[index]["node_id"]),
             HexConverter::hexStringToUShort(Query::document[index]["disp_rt"]));
 
+        sensorNodes[Node_SensorNode::getPointer()].setNodeBattery(Query::document[index]["battery"]);
+
         Node_SensorNode::preincrementPointer();
     }
+}
+
+const String encodeDisplayRoute(const String &displayID, const String &receiverRouteID, const char separator)
+{
+    return encodeDisplayRoute(
+        HexConverter::hexStringToUShort(displayID),
+        HexConverter::hexStringToUShort(receiverRouteID),
+        separator);
+}
+
+const String encodeDisplayRoute(const unsigned short displayID, const unsigned short receiverRouteID, const char separator)
+{
+    std::vector<unsigned short> routes{displayID, receiverRouteID};
+
+    unsigned int watchdogCounter = 0U;
+    while (routes.back() != This::ID.getID())
+    {
+        for (
+            Node_RepeaterNode::setPointerToHome();
+            Node_RepeaterNode::getPointer() < Node_RepeaterNode::getTotalNumberOfRepeaters();
+            Node_RepeaterNode::preincrementPointer())
+        {
+            if (repeaterNodes[Node_RepeaterNode::getPointer()] == routes.back())
+            {
+                routes.push_back(repeaterNodes[Node_RepeaterNode::getPointer()].getRouteID());
+                watchdogCounter = 0U;
+                break;
+            }
+        }
+
+        if (watchdogCounter)
+        {
+            Serial.println(F("[M][W] Watchdog counter tripped! Final route not found"));
+            break;
+        }
+    }
+
+    String completeRoute;
+    for (size_t index = routes.size() - 2 /* Intentional ignorance to the last index */; index < routes.size(); --index)
+    {
+        completeRoute += HexConverter::UIntToHexString(routes.at(index));
+
+        if (index)
+        {
+            completeRoute += separator;
+        }
+    }
+
+    return completeRoute;
 }
 
 void printSensorNodes()

@@ -15,7 +15,7 @@ if (empty($gtwy_id)) {
     exit();
 }
 
-$query = "SELECT COUNT(*) FROM `node_gateways` WHERE `gtwy_id`='$gtwy_id' AND `on_serv`=true";
+$query = "SELECT COUNT(*) FROM `node_gateways` WHERE `gtwy_id`='$gtwy_id'";
 $result = $mysqli->query($query);
 
 echo $result->fetch_row()[0];

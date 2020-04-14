@@ -9,7 +9,7 @@ if (($auth_key != $_GET['auth_key']) && ($auth_key != $_POST['auth_key'])) {
     exit();
 }
 
-$query = "SELECT COUNT(*) FROM `node_devices` WHERE `on_serv`=true LIMIT 1";
+$query = "SELECT COUNT(*) FROM `node_devices` LIMIT 1";
 $result = $mysqli->query($query);
 $row = $result->fetch_row()[0];
 

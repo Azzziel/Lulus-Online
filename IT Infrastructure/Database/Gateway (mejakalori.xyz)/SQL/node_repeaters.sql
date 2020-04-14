@@ -12,11 +12,10 @@ CREATE TABLE `u216319883_nodesens_db`.`node_repeaters` (
      */
   `send_rt` CHAR(4) NOT NULL,
   -- -------------------------------------------------------
-  `on_serv` BOOLEAN NOT NULL,
   PRIMARY KEY (`index`),
   UNIQUE `UNIQUE_ID` (`rptr_id`)
 ) ENGINE = InnoDB;
-INSERT INTO `u216319883_nodesens_db`.`node_repeaters` (`rptr_id`, `send_rt`, `on_serv`)
+INSERT INTO `u216319883_nodesens_db`.`node_repeaters` (`rptr_id`, `send_rt`)
 VALUES
-  ('AA01', 'AAA1', true),
-  ('AA02', 'AA01', true);
+  ('AA01', 'AAA1'),
+  ('AA02', 'AA01');

@@ -12,7 +12,7 @@ public:
     struct ID_t
     {
         char signature;
-        unsigned short data;
+        uint16_t data;
     };
 
 public:

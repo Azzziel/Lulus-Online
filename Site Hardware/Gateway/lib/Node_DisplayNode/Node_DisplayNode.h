@@ -8,24 +8,26 @@ class Node_DisplayNode
 {
 public:
     Node_DisplayNode() { ++totalNumberOfDisplayObjects; }
-    ~Node_DisplayNode() { --totalNumberOfDisplayObjects; }
+    ~Node_DisplayNode();
 
     void begin(const String &id, const String &route)
     {
-        begin(HexConverter::hexStringToUInt(id), HexConverter::hexStringToUInt(route));
+        begin(HexConverter::hexStringToUShort(id), route);
     }
 
-    void begin(const unsigned int id, const unsigned int route);
+    void begin(const unsigned short id, const String &route);
     void end();
 
-    const bool operator==(const unsigned int id) const { return id == getDisplayID(); }
-    const bool operator==(const String &id) const { return operator==(HexConverter::hexStringToUInt(id)); }
+    const bool operator==(const unsigned short id) const { return id == getDisplayID(); }
+    const bool operator==(const String &id) const { return operator==(HexConverter::hexStringToUShort(id)); }
 
-    const unsigned int getDisplayID() const { return displayID; }
+    const unsigned short getDisplayID() const { return displayID; }
     const String getDisplayIDInHexString() const { return HexConverter::UIntToHexString(getDisplayID(), 4); }
 
-    const unsigned int getRouteID() const { return displayRoute; }
-    const String getRouteIDInHexString() const { return HexConverter::UIntToHexString(getRouteID(), 4); }
+    void setDisplayRoute(const String &route);
+    void unsetDisplayRoute();
+
+    const String &getDisplayRoute();
 
     void printTable();
 
@@ -38,8 +40,8 @@ private:
     static unsigned int totalNumberOfDisplays;
     static unsigned int totalNumberOfDisplayObjects;
 
-    unsigned int displayID{};
-    unsigned int displayRoute{};
+    unsigned short displayID{};
+    const String *displayRoute{};
 
     // ---------------------------------------------------------------------------------------------------
 

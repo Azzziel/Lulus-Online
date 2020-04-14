@@ -4,7 +4,6 @@ CREATE TABLE `u216319883_nodesens_db`.`node_devices` (
   `node_id` CHAR(4) NOT NULL,
   `rptr_rt` CHAR(4) NOT NULL,
   `disp_rt` CHAR(4) NULL,
-  `on_serv` BOOLEAN NOT NULL,
   PRIMARY KEY (`index`),
   FOREIGN KEY (`rptr_rt`) REFERENCES `node_repeaters` (`rptr_id`),
   FOREIGN KEY (`disp_rt`) REFERENCES `node_displays` (`disp_id`),
@@ -13,11 +12,10 @@ CREATE TABLE `u216319883_nodesens_db`.`node_devices` (
 INSERT INTO `u216319883_nodesens_db`.`node_devices` (
     `node_id`,
     `rptr_rt`,
-    `disp_rt`,
-    `on_serv`
+    `disp_rt`
   )
 VALUES
-  ('A001', 'AA01', 'AB01', true),
-  ('A002', 'AA01', 'AB01', true),
-  ('A003', 'AA02', NULL, true),
-  ('A004', 'AA02', NULL, true);
+  ('A001', 'AA01', 'AB01'),
+  ('A002', 'AA01', 'AB01'),
+  ('A003', 'AA02', NULL),
+  ('A004', 'AA02', NULL);
