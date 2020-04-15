@@ -4,6 +4,8 @@
 
 #include <EEPROM.h>
 
+#include <SoftwareSerial.h>
+
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <HTTPClient.h>
@@ -57,6 +59,32 @@ unsigned int index = 1U;
 unsigned int pointer = 0U;
 } // namespace QueryByParts
 
+namespace Receiver
+{
+const unsigned int SOFT_RX = 16U;
+const unsigned int SOFT_TX = 17U;
+SoftwareSerial serial(SOFT_RX, SOFT_TX);
+
+const unsigned int SET = 4U;
+Node_HC12 HC12(&serial, SET);
+
+const uint32_t BAUDRATE = 2400U;
+const uint8_t CHANNEL = 19U;
+} // namespace Receiver
+
+namespace Transmitter
+{
+const unsigned int SOFT_RX = 26U;
+const unsigned int SOFT_TX = 27U;
+SoftwareSerial serial(SOFT_RX, SOFT_TX);
+
+const unsigned int SET = 25U;
+Node_HC12 HC12(&serial, SET);
+
+const uint32_t BAUDRATE = 2400U;
+const uint8_t CHANNEL = 13U;
+} // namespace Transmitter
+
 namespace Message
 {
 const char START = '<';
@@ -88,6 +116,9 @@ POSTHandler post(&client, SERVER_URL, SERVER_KEY);
 void setup()
 {
     Serial.begin(MONITOR_SPEED);
+
+    Transmitter::HC12.begin(Transmitter::BAUDRATE, Transmitter::CHANNEL);
+    Receiver::HC12.begin(Receiver::BAUDRATE, Receiver::CHANNEL);
 
     EEPROM.begin(sizeof(Node_ID::ID_t));
     This::ID.loadIDFromEEPROM(This::ID_SAVE_ADDRESS, This::ID_SIGNATURE);
@@ -152,6 +183,29 @@ void setup()
 
 void loop()
 {
+    if (Receiver::serial.available())
+    {
+        String buffer{"[R] "};
+        do
+        {
+            buffer += static_cast<char>(Receiver::serial.read());
+            delay(10);
+        } while (Receiver::serial.available());
+
+        Serial.println(buffer);
+    }
+
+    if (Transmitter::serial.available())
+    {
+        String buffer{"[T] "};
+        do
+        {
+            buffer += static_cast<char>(Transmitter::serial.read());
+            delay(10);
+        } while (Transmitter::serial.available());
+
+        Serial.println(buffer);
+    }
 }
 
 void Query::loadStringPayload(const char *phpFilename, void (*stringLoader)(const String &, void (*)()), void (*jsonLoader)())
@@ -222,10 +276,10 @@ void Query::loadDisplayNodes()
         }
 
         displayNodes[Node_DisplayNode::getPointer()].begin(
-            Query::document[index]["disp_id"].as<String>(),
+            HexConverter::hexStringToUShort(Query::document[index]["disp_id"]),
             encodeDisplayRoute(
-                Query::document[index]["disp_id"].as<String>(),
-                Query::document[index]["recv_rt"].as<String>(),
+                HexConverter::hexStringToUShort(Query::document[index]["disp_id"]),
+                HexConverter::hexStringToUShort(Query::document[index]["recv_rt"]),
                 Message::SUBSEPARATOR));
 
         Node_DisplayNode::preincrementPointer();

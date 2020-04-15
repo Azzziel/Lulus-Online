@@ -1,6 +1,10 @@
+#include <vector>
+
 #include <Arduino.h>
 
 #include <EEPROM.h>
+
+#include <SoftwareSerial.h>
 
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -12,306 +16,401 @@
 #include <HexConverter.h>
 #include <POSTHandler.h>
 #include <PayloadHandler.h>
-#include <SensorNode.h>
-
-const char WIFI_SSID[] PROGMEM = "HOME-NETWORK";
-const char WIFI_PASS[] PROGMEM = ":Waffle/64/Licious:";
-const char SERVER_URL[] PROGMEM = "http://mejakalori.xyz/NodeTest/";
-const char SERVER_KEY[] PROGMEM = "2fad7ae4be04ce093c8a9e48511fdf6c";
+#include <Divider.h>
+#include <Node_DisplayNode.h>
+#include <Node_RepeaterNode.h>
+#include <Node_SensorNode.h>
+#include <Node_ID.h>
 
 const unsigned long MONITOR_SPEED = 115200UL;
 
-namespace ThisGateway
+const char WIFI_SSID[] PROGMEM = "HOME-NETWORK";
+const char WIFI_PASS[] PROGMEM = ":Waffle/192/Licious:";
+const char SERVER_URL[] PROGMEM = "http://mejakalori.xyz/NodeTest/";
+const char SERVER_KEY[] PROGMEM = "2fad7ae4be04ce093c8a9e48511fdf6c";
+
+namespace This
 {
 const unsigned int ID_SAVE_ADDRESS = 0U;
-unsigned short ID;
-} // namespace ThisGateway
+const char ID_SIGNATURE = 'G';
 
-namespace HC12
+Node_ID ID;
+} // namespace This
+
+namespace Query
 {
-const unsigned long BAUD_RATE = 2400UL;
-const unsigned int SET_PIN = 4U;
+StaticJsonDocument<3840> document;
 
-void setToATCommandMode();
-void setToTransmissionMode();
-} // namespace HC12
+void loadStringPayload(const char *, void (*)(const String &, void (*)()), void (*)());
+void getSensorCount(const String &, void (*)());
+void getGatewayStatus(const String &, void (*)());
 
-namespace MessageChar
+void loadJsonPayload(const String &, void (*)());
+void loadDisplayNodes();
+void loadRepeaterNodes();
+void loadSensorNodes();
+} // namespace Query
+
+namespace QueryByParts
+{
+const unsigned int LIMIT = 32U;
+
+unsigned int index = 1U;
+unsigned int pointer = 0U;
+} // namespace QueryByParts
+
+namespace Receiver
+{
+const unsigned int SOFT_RX = 16U;
+const unsigned int SOFT_TX = 17U;
+SoftwareSerial serial(SOFT_RX, SOFT_TX);
+
+const unsigned int SET = 4U;
+Node_HC12 HC12(&serial, SET);
+
+const uint32_t BAUDRATE = 2400U;
+const uint8_t CHANNEL = 19U;
+} // namespace Receiver
+
+namespace Transmitter
+{
+const unsigned int SOFT_RX = 26U;
+const unsigned int SOFT_TX = 27U;
+SoftwareSerial serial(SOFT_RX, SOFT_TX);
+
+const unsigned int SET = 25U;
+Node_HC12 HC12(&serial, SET);
+
+const uint32_t BAUDRATE = 2400U;
+const uint8_t CHANNEL = 13U;
+} // namespace Transmitter
+
+namespace Message
 {
 const char START = '<';
-const char END = '>';
-const char FINAL = '#';
 const char SEPARATOR = '/';
 const char SUBSEPARATOR = ':';
-} // namespace MessageChar
+const char END = '>';
+} // namespace Message
 
-HTTPClient httpClient;
-POSTHandler post{&httpClient, SERVER_URL, SERVER_KEY};
+// Access this array only by the class-provided pointer
+Node_SensorNode sensorNodes[512U];
+void printSensorNodes();
 
-PayloadHandler messagePayload(MessageChar::SEPARATOR);
+// Access this array only by the class-provided pointer
+Node_RepeaterNode repeaterNodes[32U];
+void printRepeaterNodes();
 
-SensorNode *nodeArray = nullptr;
+// Access this array only by the class-provided pointer
+Node_DisplayNode displayNodes[32U];
+void printDisplayNodes();
+
+const String encodeDisplayRoute(const String &displayID, const String &receiverRouteID, const char separator);
+const String encodeDisplayRoute(const unsigned short displayID, const unsigned short receiverRouteID, const char separator);
+
+Divider dividedQuery;
+
+HTTPClient client;
+POSTHandler post(&client, SERVER_URL, SERVER_KEY);
 
 void setup()
 {
-    pinMode(HC12::SET_PIN, OUTPUT);
-    pinMode(BUILTIN_LED, OUTPUT);
-
     Serial.begin(MONITOR_SPEED);
-    Serial2.begin(HC12::BAUD_RATE);
 
-    // WiFi has yet to connect, turn the LED on
+    Receiver::HC12.begin(Receiver::BAUDRATE, Receiver::CHANNEL);
+    Transmitter::HC12.begin(Transmitter::BAUDRATE, Transmitter::CHANNEL);
+
+    EEPROM.begin(sizeof(Node_ID::ID_t));
+    This::ID.loadIDFromEEPROM(This::ID_SAVE_ADDRESS, This::ID_SIGNATURE);
+    EEPROM.end();
+
+    if (!This::ID.getID())
+    {
+        Serial.println(F("[M][E] EEPROM corrupt or not set"));
+
+        while (1) // Halt operation
+            delay(0);
+    }
+
+    // Turn BUILTIN_LED on to indicate network-related startup
+    pinMode(BUILTIN_LED, OUTPUT);
     digitalWrite(BUILTIN_LED, HIGH);
 
     WiFi.begin(WIFI_SSID, WIFI_PASS);
-
     while (WiFi.status() != WL_CONNECTED)
-        delay(0);
+        delay(0U);
 
-    // Now that it's connected, turn the LED off
-    digitalWrite(BUILTIN_LED, LOW);
+    post.addRequestData("gtwy_id", This::ID.getIDInHexString().c_str());
+    Query::loadStringPayload("get_gateway_status.php", Query::getGatewayStatus, nullptr);
 
-    EEPROM.begin(sizeof(ThisGateway::ID));
-    ThisGateway::ID = EEPROM.readUShort(ThisGateway::ID_SAVE_ADDRESS);
-
-    Serial.print("[M] This gateway's ID is ");
-    Serial.print(HexConverter::UIntToHexStringWithLiteral(ThisGateway::ID));
+    Serial.print("[M] Gateway ID: ");
+    Serial.print(This::ID.getIDInHexString());
     Serial.println();
 
-    // Pulling sensor node data from the database ----------------------
+    const unsigned long queryStartMillis = millis();
 
-    int httpCode;
-    const String payload = post.getStringPayload("get_node_hex_table.php", &httpCode);
+    // Query ------------------------------------------------------------------------------------------
+    Query::loadStringPayload("get_repeater_nodes.php", Query::loadJsonPayload, Query::loadRepeaterNodes);
+    Query::loadStringPayload("get_display_nodes.php", Query::loadJsonPayload, Query::loadDisplayNodes);
 
-    if (httpCode != t_http_codes::HTTP_CODE_OK)
+    Query::loadStringPayload("count_sensor_nodes.php", Query::getSensorCount, nullptr);
+    Node_SensorNode::setPointerToHome();
+    while (QueryByParts::pointer < dividedQuery.getArraySize())
     {
-        Serial.print("[M] WiFi status: ");
-        Serial.print(WiFi.status());
-        Serial.println();
+        post.addRequestData("query_index", String(QueryByParts::index).c_str());
+        post.addRequestData("query_limit", String(QueryByParts::LIMIT).c_str());
 
-        Serial.print("[M] HTTP code: ");
-        Serial.print(httpCode);
-        Serial.println();
+        Query::loadStringPayload("get_sensor_nodes_with_battery.php", Query::loadJsonPayload, Query::loadSensorNodes);
 
-        Serial.println("[M][E] Failed to get payload due to network or HTTP failure.");
+        QueryByParts::index += dividedQuery[QueryByParts::pointer];
+        ++QueryByParts::pointer;
     }
-    else
-    {
-        Serial.println("[M] Getting payload successful. Loading sensor data...");
+    dividedQuery.clearArray();
+    // ------------------------------------------------------------------------------------------------
 
-        // StaticJsonDocument<5000> document;
-        DynamicJsonDocument document{5000}; // Change this later to static document to reduce heap fragmentation
+    Serial.print(F("[M] Data retrieval done in "));
+    Serial.print(millis() - queryStartMillis);
+    Serial.print(F(" ms"));
+    Serial.println();
 
-        DeserializationError deserializationError = deserializeJson(document, payload.c_str());
+    // Turn the LED off, by this point it is proven that everything above has succeeded
+    digitalWrite(BUILTIN_LED, LOW);
 
-        if (deserializationError)
-        {
-            Serial.print("[M][E] Deserialization error: ");
-            Serial.print(deserializationError.c_str());
-            Serial.println();
-        }
-        else
-        {
-            nodeArray = new SensorNode[document.size()];
-
-            for (size_t index{}; index < document.size(); ++index)
-            {
-                nodeArray[index].begin(
-                    document[index]["node_status"],
-                    document[index]["node_battery"],
-                    HexConverter::hexStringToUInt(document[index]["node_id"]),
-                    HexConverter::hexStringToUInt(document[index]["node_display"]));
-            }
-
-            Serial.println("[M] Loading data done.");
-        }
-    }
-
-    // -----------------------------------------------------------------
+    printRepeaterNodes();
+    printDisplayNodes();
+    printSensorNodes();
 }
 
 void loop()
 {
-    if (Serial.available())
+    if (Receiver::serial.available())
     {
-        String reading;
-
+        String buffer{"[R] "};
         do
         {
-            reading += static_cast<char>(Serial.read());
-        } while (Serial.available());
+            buffer += static_cast<char>(Receiver::serial.read());
+            delay(10);
+        } while (Receiver::serial.available());
 
-        const String PRINT_NODE_TABLE = "PRINT_NODE_TABLE";
-        const String PRINT_NODE_ID = "PRINT_NODE_ID_";
-
-        if (reading == PRINT_NODE_TABLE)
-        {
-            if (nodeArray != nullptr)
-            {
-                Serial.print("[I]");
-                Serial.print('\t');
-
-                Serial.print("ID");
-                Serial.print('\t');
-
-                Serial.print("INIT");
-                Serial.print('\t');
-
-                Serial.print("STAT");
-                Serial.print('\t');
-
-                Serial.print("BATT");
-                Serial.print('\t');
-
-                Serial.print("MTRX");
-                Serial.println();
-
-                for (size_t index = 0; index < SensorNode::getNodeCount(); ++index)
-                {
-                    Serial.print('[');
-                    Serial.print(index);
-                    Serial.print(']');
-                    Serial.print('\t');
-
-                    Serial.print(HexConverter::UIntToHexStringWithLiteral(nodeArray[index].getNodeID(), 4));
-                    Serial.print('\t');
-
-                    Serial.print(nodeArray[index].getInitializationStatus() ? "YES" : "NO");
-                    Serial.print('\t');
-
-                    Serial.print(nodeArray[index].getNodeStatus());
-                    Serial.print('\t');
-
-                    Serial.print(nodeArray[index].getNodeBattery());
-                    Serial.print('\t');
-
-                    Serial.print(HexConverter::UIntToHexStringWithLiteral(nodeArray[index].getMatrixNodePointsTo(), 4));
-                    Serial.println();
-                }
-            }
-            else
-            {
-                Serial.println("[M][E] Node array is not initialized.");
-            }
-        }
-        else if (reading.startsWith(PRINT_NODE_ID))
-        {
-            reading.remove(0, PRINT_NODE_ID.length());
-
-            const unsigned int nodeID = HexConverter::hexStringToUInt(reading);
-
-            if (nodeArray != nullptr)
-            {
-                for (size_t index = 0; index < SensorNode::getNodeCount(); ++index)
-                {
-                    if (nodeArray[index].checkNodeID(nodeID))
-                    {
-                        Serial.print('[');
-                        Serial.print(index);
-                        Serial.print(']');
-                        Serial.println();
-
-                        Serial.println(nodeArray[index]);
-
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                Serial.println("[M][E] Node array is not initialized.");
-            }
-        }
-        else
-        {
-            Serial.println("[M][E] Command message unknown.");
-        }
+        Serial.println(buffer);
     }
 
-    if (Serial2.available())
+    if (Transmitter::serial.available())
     {
-        String messageReading;
-
+        String buffer{"[T] "};
         do
         {
-            messageReading += static_cast<char>(Serial2.read());
+            buffer += static_cast<char>(Transmitter::serial.read());
+            delay(10);
+        } while (Transmitter::serial.available());
 
-            // Stop reading when the end char is detected
-            if (messageReading[messageReading.length() - 1] == MessageChar::END)
+        Serial.println(buffer);
+    }
+}
+
+void Query::loadStringPayload(const char *phpFilename, void (*stringLoader)(const String &, void (*)()), void (*jsonLoader)())
+{
+    int httpCode;
+    const String payload = post.getStringPayload(phpFilename, &httpCode);
+
+    if (httpCode == t_http_codes::HTTP_CODE_OK)
+    {
+        stringLoader(payload, jsonLoader);
+    }
+    else
+    {
+        Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
+
+        while (true) // Halt operation
+            delay(0U);
+    }
+}
+
+void Query::getSensorCount(const String &stringPayload, void (*)())
+{
+    dividedQuery.loadDivider(stringPayload.toInt(), QueryByParts::LIMIT);
+}
+
+void Query::getGatewayStatus(const String &stringPayload, void (*)())
+{
+    if (!stringPayload.toInt())
+    {
+        Serial.println(F("[M][E] Gateway was not found in the database or may have reached its end of service"));
+
+        while (true) // Halt operation
+            delay(0U);
+    }
+}
+
+void Query::loadJsonPayload(const String &stringPayload, void (*loadFunction)())
+{
+    DeserializationError deserializationError = deserializeJson(Query::document, stringPayload.c_str());
+
+    if (deserializationError)
+    {
+        Serial.print(F("[M][E] Deserialization error: "));
+        Serial.print(deserializationError.c_str());
+        Serial.println();
+
+        while (true) // Halt operation
+            delay(0U);
+    }
+    else
+    {
+        loadFunction();
+    }
+}
+
+void Query::loadDisplayNodes()
+{
+    Node_DisplayNode::setPointerToHome();
+
+    for (size_t index = 0U; index < Query::document.size(); ++index)
+    {
+        if (Node_DisplayNode::getPointer() >= Node_DisplayNode::getTotalNumberOfDisplayObjects())
+        {
+            Serial.println(F("[M][E] Repeater objects are not enough to contain the devices"));
+
+            while (true) // Halt operation
+                delay(0U);
+        }
+
+        displayNodes[Node_DisplayNode::getPointer()].begin(
+            HexConverter::hexStringToUShort(Query::document[index]["disp_id"]),
+            encodeDisplayRoute(
+                HexConverter::hexStringToUShort(Query::document[index]["disp_id"]),
+                HexConverter::hexStringToUShort(Query::document[index]["recv_rt"]),
+                Message::SUBSEPARATOR));
+
+        Node_DisplayNode::preincrementPointer();
+    }
+}
+
+void Query::loadRepeaterNodes()
+{
+    Node_RepeaterNode::setPointerToHome();
+
+    for (size_t index = 0U; index < Query::document.size(); ++index)
+    {
+        if (Node_RepeaterNode::getPointer() >= Node_RepeaterNode::getTotalNumberOfRepeaterObjects())
+        {
+            Serial.println(F("[M][E] Repeater objects are not enough to contain the devices"));
+
+            while (true) // Halt operation
+                delay(0U);
+        }
+
+        repeaterNodes[Node_RepeaterNode::getPointer()].begin(
+            HexConverter::hexStringToUShort(Query::document[index]["rptr_id"]),
+            HexConverter::hexStringToUShort(Query::document[index]["send_rt"]));
+
+        Node_RepeaterNode::preincrementPointer();
+    }
+}
+
+void Query::loadSensorNodes()
+{
+    for (size_t index = 0U; index < Query::document.size(); ++index)
+    {
+        if (Node_SensorNode::getPointer() >= Node_SensorNode::getTotalNumberOfNodeObjects())
+        {
+            Serial.println(F("[M][E] Node objects are not enough to contain the devices"));
+
+            while (true) // Halt operation
+                delay(0U);
+        }
+
+        sensorNodes[Node_SensorNode::getPointer()].begin(
+            HexConverter::hexStringToUShort(Query::document[index]["node_id"]),
+            HexConverter::hexStringToUShort(Query::document[index]["disp_rt"]));
+
+        sensorNodes[Node_SensorNode::getPointer()].setNodeBattery(Query::document[index]["battery"]);
+
+        Node_SensorNode::preincrementPointer();
+    }
+}
+
+const String encodeDisplayRoute(const String &displayID, const String &receiverRouteID, const char separator)
+{
+    return encodeDisplayRoute(
+        HexConverter::hexStringToUShort(displayID),
+        HexConverter::hexStringToUShort(receiverRouteID),
+        separator);
+}
+
+const String encodeDisplayRoute(const unsigned short displayID, const unsigned short receiverRouteID, const char separator)
+{
+    std::vector<unsigned short> routes{displayID, receiverRouteID};
+
+    unsigned int watchdogCounter = 0U;
+    while (routes.back() != This::ID.getID())
+    {
+        for (
+            Node_RepeaterNode::setPointerToHome();
+            Node_RepeaterNode::getPointer() < Node_RepeaterNode::getTotalNumberOfRepeaters();
+            Node_RepeaterNode::preincrementPointer())
+        {
+            if (repeaterNodes[Node_RepeaterNode::getPointer()] == routes.back())
             {
-                // Removal of the end char
-                messageReading.remove(messageReading.length() - 1, 1);
-
-                Serial2.flush();
+                routes.push_back(repeaterNodes[Node_RepeaterNode::getPointer()].getRouteID());
+                watchdogCounter = 0U;
                 break;
             }
-
-            // Serial2.available() can return false when the data transmission is slow, delay a little to be safe (7)
-            delay(7);
-        } while (Serial2.available());
-
-        // Verify that the message starts with the start char defined in the namespace
-        bool readingIsGood = true;
-        if (messageReading[0] == MessageChar::START)
-        {
-            // Removal of the start char
-            messageReading.remove(0, 1);
-
-            for (size_t index = 0; index < messageReading.length() - 1; ++index)
-            {
-                // Verify that the message doesn't contain another start char and a stop char
-                if (messageReading[index] == MessageChar::START ||
-                    messageReading[index] == MessageChar::END)
-                {
-                    readingIsGood = false;
-                    break;
-                }
-            }
-
-            // Verify that the message ends with a final char
-            if (messageReading[messageReading.length() - 1] == MessageChar::FINAL)
-            {
-                // Removal of the final char
-                messageReading.remove(messageReading.length() - 1, 1);
-            }
-            else
-            {
-                readingIsGood = false;
-            }
-        }
-        else
-        {
-            readingIsGood = false;
         }
 
-        if (readingIsGood)
+        if (watchdogCounter)
         {
-            messagePayload.loadPayload(&messageReading);
-
-            if (messagePayload[0] != HexConverter::UIntToHexString(ThisGateway::ID))
-            {
-                Serial.println("[M] The message is not intended to be received by this gateway, ignored.");
-                messagePayload.unloadPayload();
-            }
+            Serial.println(F("[M][W] Watchdog counter tripped! Final route not found"));
+            break;
         }
     }
 
-    if (messagePayload.isSet())
+    String completeRoute;
+    for (size_t index = routes.size() - 2 /* Intentional ignorance to the last index */; index < routes.size(); --index)
     {
-        // Process payload here
+        completeRoute += HexConverter::UIntToHexString(routes.at(index));
 
-        messagePayload.unloadPayload();
+        if (index)
+        {
+            completeRoute += separator;
+        }
+    }
+
+    return completeRoute;
+}
+
+void printSensorNodes()
+{
+    Node_SensorNode::printTableHeader();
+    for (
+        Node_SensorNode::setPointerToHome();
+        Node_SensorNode::getPointer() < Node_SensorNode::getTotalNumberOfNodes();
+        Node_SensorNode::preincrementPointer())
+    {
+        sensorNodes[Node_SensorNode::getPointer()].printTable();
     }
 }
 
-void HC12::setToATCommandMode()
+void printRepeaterNodes()
 {
-    digitalWrite(HC12::SET_PIN, LOW);
-    delay(40);
+    Node_RepeaterNode::printTableHeader();
+    for (
+        Node_RepeaterNode::setPointerToHome();
+        Node_RepeaterNode::getPointer() < Node_RepeaterNode::getTotalNumberOfRepeaters();
+        Node_RepeaterNode::preincrementPointer())
+    {
+        repeaterNodes[Node_RepeaterNode::getPointer()].printTable();
+    }
 }
 
-void HC12::setToTransmissionMode()
+void printDisplayNodes()
 {
-    digitalWrite(HC12::SET_PIN, HIGH);
-    delay(80);
+    Node_DisplayNode::printTableHeader();
+    for (
+        Node_DisplayNode::setPointerToHome();
+        Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
+        Node_DisplayNode::preincrementPointer())
+    {
+        displayNodes[Node_DisplayNode::getPointer()].printTable();
+    }
 }
