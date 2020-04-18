@@ -18,6 +18,3 @@ if (isset($row)) {
 } else {
     echo '0';
 }
-
-$result->close();
-$mysqli->close();

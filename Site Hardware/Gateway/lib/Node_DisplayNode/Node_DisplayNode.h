@@ -29,6 +29,9 @@ public:
 
     const String &getDisplayRoute();
 
+    void setDisplayValue(const unsigned short value) { displayValue = value; }
+    const unsigned short getDisplayValue() const { return displayValue; }
+
     void printTable();
 
     static void printTableHeader();
@@ -42,6 +45,8 @@ private:
 
     unsigned short displayID{};
     const String *displayRoute{};
+
+    unsigned short displayValue{};
 
     // ---------------------------------------------------------------------------------------------------
 

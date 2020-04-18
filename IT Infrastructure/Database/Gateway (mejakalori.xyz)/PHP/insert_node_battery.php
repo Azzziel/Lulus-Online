@@ -27,6 +27,3 @@ if ($result = $mysqli->query($query)) {
 } else {
     echo 'FAILED';
 }
-
-$result->close();
-$mysqli->close();

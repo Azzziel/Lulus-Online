@@ -31,8 +31,6 @@ if ($node_id === 'all') {
 
     echo json_encode($result->fetch_all(MYSQLI_ASSOC));
 
-    $result->close();
-    $mysqli->close();
     exit();
 }
 
@@ -40,6 +38,3 @@ $query = "SELECT `n_stats` FROM `node_statuses` WHERE `node_id`='$node_id' ORDER
 $result = $mysqli->query($query);
 
 echo $result->fetch_row()[0];
-
-$result->close();
-$mysqli->close();

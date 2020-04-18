@@ -17,6 +17,3 @@ FROM   `node_repeaters`";
 $result = $mysqli->query($query);
 
 echo json_encode($result->fetch_all(MYSQLI_ASSOC));
-
-$result->close();
-$mysqli->close();

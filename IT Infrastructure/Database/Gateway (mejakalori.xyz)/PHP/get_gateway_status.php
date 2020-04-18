@@ -19,6 +19,3 @@ $query = "SELECT COUNT(*) FROM `node_gateways` WHERE `gtwy_id`='$gtwy_id'";
 $result = $mysqli->query($query);
 
 echo $result->fetch_row()[0];
-
-$result->close();
-$mysqli->close();

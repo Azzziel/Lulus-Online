@@ -18,7 +18,7 @@ public:
     void begin(const unsigned short id, const unsigned short display);
     void end();
 
-    void setNodeStatus(const bool status);
+    void setNodeStatus(const bool status) { nodeStatus = status; }
     const bool getNodeStatus() const { return nodeStatus; }
     void flipNodeStatus() { setNodeStatus(!getNodeStatus()); }
 
@@ -34,11 +34,6 @@ public:
     const unsigned short getDisplayID() const { return nodeDisplay; }
     const String getDisplayIDInHexString() const { return HexConverter::UIntToHexString(getDisplayID(), 4); }
 
-    void setLastReported() { setLastReported(millis()); }
-    void setLastReported(const unsigned long millisTimestamp) { lastReported = millisTimestamp; }
-
-    const bool isActive() const { return millis() - lastReported < MAX_INACTIVE_PERIOD; }
-
     void printTable();
 
     static void printTableHeader();
@@ -46,13 +41,18 @@ public:
     static const unsigned int getTotalNumberOfNodes() { return totalNumberOfNodes; }
     static const unsigned int getTotalNumberOfNodeObjects() { return totalNumberOfNodeObjects; }
 
+    enum Keys
+    {
+        CAR,
+        BAT
+    };
+
+    static const char *const KEY_CAR; // 0 in enum
+    static const char *const KEY_BAT; // 1 in enum
+
 private:
     static unsigned int totalNumberOfNodes;
     static unsigned int totalNumberOfNodeObjects;
-
-    static unsigned long MAX_INACTIVE_PERIOD;
-
-    unsigned long lastReported = 0 - MAX_INACTIVE_PERIOD;
 
     bool nodeStatus{};
     unsigned char nodeBattery{};

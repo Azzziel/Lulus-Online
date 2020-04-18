@@ -3,10 +3,11 @@
 
 #include <HexConverter.h>
 
+const char *const Node_SensorNode::KEY_CAR = "CAR";
+const char *const Node_SensorNode::KEY_BAT = "BAT";
+
 unsigned int Node_SensorNode::totalNumberOfNodes{};
 unsigned int Node_SensorNode::totalNumberOfNodeObjects{};
-
-unsigned long Node_SensorNode::MAX_INACTIVE_PERIOD = 120000UL;
 
 Node_SensorNode::~Node_SensorNode()
 {
@@ -38,12 +39,6 @@ void Node_SensorNode::end()
     }
 }
 
-void Node_SensorNode::setNodeStatus(const bool status)
-{
-    nodeStatus = status;
-    setLastReported();
-}
-
 void Node_SensorNode::printTableHeader()
 {
     Serial.print("[T]");
@@ -53,11 +48,9 @@ void Node_SensorNode::printTableHeader()
     Serial.print('\t');
     Serial.print("D_ID");
     Serial.print('\t');
-    Serial.print("BATT");
-    Serial.print('\t');
-    Serial.print("ACTV");
-    Serial.print('\t');
     Serial.print("STAT");
+    Serial.print('\t');
+    Serial.print("BATT");
 
     Serial.println();
 }
@@ -71,25 +64,10 @@ void Node_SensorNode::printTable()
     Serial.print('\t');
     Serial.print(getDisplayIDInHexString());
     Serial.print('\t');
-
-    if (getNodeBattery())
-    {
-        Serial.print("LV_");
-        Serial.print(getNodeBattery());
-    }
-    else
-    {
-        Serial.print("NO_B");
-    }
-
+    Serial.print(getNodeStatus() ? "PARK" : "EMPT");
     Serial.print('\t');
-    Serial.print(isActive() ? "ACTV" : "LOST");
-
-    if (isActive())
-    {
-        Serial.print('\t');
-        Serial.print(getNodeStatus() ? "PARK" : "EMPT");
-    }
+    Serial.print("LV_");
+    Serial.print(getNodeBattery());
 
     Serial.println();
 }
