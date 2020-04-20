@@ -104,14 +104,19 @@ const uint8_t CHANNEL = 13U;
 
 struct Queue
 {
-    Queue(const unsigned short node_id, const String &t, const String &k, const unsigned char v) : id{node_id}, to{t}, key{k}, value{v} {}
+    Queue(const unsigned short device_id, const String &t, const String &k, const unsigned char v) : id{device_id}, to{t}, key{k}, value{v} {}
 
-    unsigned short id;   // Cannot be const due to erase member function in std::deque
-    String to;           // Cannot be const due to erase member function in std::deque
-    String key;          // Cannot be const due to erase member function in std::deque
-    unsigned char value; // Cannot be const due to erase member function in std::deque
-
+    const unsigned short id;
     bool isSent = false;
+
+    const String to;
+    const String key;
+    const unsigned char value;
+
+    bool operator==(const Queue &q) const
+    {
+        return this->id == q.id && this->to == q.to && this->key == q.key;
+    }
 };
 
 std::deque<Queue> queue;
@@ -173,6 +178,11 @@ void setup()
 {
     Serial.begin(MONITOR_SPEED);
 
+    /* Uncomment this section to write EEPROM for the first time */
+    // EEPROM.begin(sizeof(Node_ID::ID_t));
+    // This::ID.putNewIDToEEPROM(This::ID_SAVE_ADDRESS, {'G', HexConverter::hexStringToUShort("AAA1")});
+    // EEPROM.end();
+
     EEPROM.begin(sizeof(Node_ID::ID_t));
     This::ID.loadIDFromEEPROM(This::ID_SAVE_ADDRESS, This::ID_SIGNATURE);
     EEPROM.end();
@@ -224,7 +234,16 @@ void setup()
          Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
          Node_DisplayNode::preincrementPointer())
     {
-        displayNodes[Node_DisplayNode::getPointer()].setDisplayValue(countDisplayValue(displayNodes[Node_DisplayNode::getPointer()].getDisplayID()));
+        const unsigned int currentDisplayValue = countDisplayValue(displayNodes[Node_DisplayNode::getPointer()].getDisplayID());
+
+        displayNodes[Node_DisplayNode::getPointer()].setDisplayValue(currentDisplayValue);
+
+        Transmitter::Queue newTransmission{displayNodes[Node_DisplayNode::getPointer()].getDisplayID(),
+                                           displayNodes[Node_DisplayNode::getPointer()].getDisplayRoute(),
+                                           F("NUM"),
+                                           static_cast<unsigned char>(currentDisplayValue)};
+
+        Transmitter::queue.push_back(newTransmission);
     }
     // ------------------------------------------------------------------------------------------------
 
@@ -242,14 +261,47 @@ void setup()
 
     // Turn the LED off, by this point it is proven that everything above has succeeded
     digitalWrite(BUILTIN_LED, LOW);
-
-    printRepeaterNodes();
-    printDisplayNodes();
-    printSensorNodes();
 }
 
 void loop()
 {
+    // Enables manual serial command
+    if (Serial.available())
+    {
+        String buffer;
+
+        unsigned long previousMicros = micros();
+        while (true)
+        {
+            if (micros() - previousMicros < 500UL)
+            {
+                if (Serial.available())
+                {
+                    buffer += static_cast<char>(Serial.read());
+                    previousMicros = micros();
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (buffer == F("PRINT_SENSOR_NODES"))
+        {
+            printSensorNodes();
+        }
+        else if (buffer == F("PRINT_REPEATER_NODES"))
+        {
+            printRepeaterNodes();
+        }
+        else if (buffer == F("PRINT_DISPLAY_NODES"))
+        {
+            printDisplayNodes();
+        }
+    }
+
+    // Receive routine, sends ACK on the go, removes a transmission queue after an ACK
     if (Receiver::serial.available())
     {
         static char receiverBuffer[128U]{};
@@ -318,9 +370,9 @@ void loop()
 
                                     Transmitter::serial.print(message);
 
-                                    Query::Queue newQuery{Node_SensorNode::Keys::CAR,
-                                                          HexConverter::hexStringToUShort(node),
-                                                          static_cast<unsigned char>(value.toInt())};
+                                    const Query::Queue newQuery{Node_SensorNode::Keys::CAR,
+                                                                HexConverter::hexStringToUShort(node),
+                                                                static_cast<unsigned char>(value.toInt())};
 
                                     bool sameQueryFound = false;
                                     if (!Query::queue.empty())
@@ -356,9 +408,9 @@ void loop()
 
                                     Transmitter::serial.print(message);
 
-                                    Query::Queue newQuery{Node_SensorNode::Keys::BAT,
-                                                          HexConverter::hexStringToUShort(node),
-                                                          static_cast<unsigned char>(value.toInt())};
+                                    const Query::Queue newQuery{Node_SensorNode::Keys::BAT,
+                                                                HexConverter::hexStringToUShort(node),
+                                                                static_cast<unsigned char>(value.toInt())};
 
                                     bool sameQueryFound = false;
                                     if (!Query::queue.empty())
@@ -381,32 +433,29 @@ void loop()
                             }
                         }
                     }
-                    // else if (numberOfTokens == 4U) // ACK message
-                    // {
-                    //     const String to = strtok(messageBuffer, delimiters);
-                    //     const String from = strtok(nullptr, delimiters);
-                    //     const String key = strtok(nullptr, delimiters);
-                    //     const String value = strtok(nullptr, delimiters);
+                    else if (numberOfTokens == 4U) // ACK message
+                    {
+                        const String to = strtok(messageBuffer, delimiters);
+                        const String from = strtok(nullptr, delimiters);
+                        const String key = strtok(nullptr, delimiters);
+                        const String value = strtok(nullptr, delimiters);
 
-                    //     if (to == This::ID.getIDInHexString() &&
-                    //         verifyRepeaterNode(HexConverter::hexStringToUShort(from)))
-                    //     {
-                    //         if (key == F("ACK") && value.toInt() == 1)
-                    //         {
-                    //             if (!Transmitter::queue.empty())
-                    //             {
-                    //                 for (size_t index = 0U; index < Transmitter::queue.size(); ++index)
-                    //                 {
-                    //                     if (Transmitter::queue.at(index).isSent && Transmitter::queue.at(index).to.startsWith(from))
-                    //                     {
-                    //                         setDisplayValue(Transmitter::queue.at(index).id, Transmitter::queue.at(index).value);
-                    //                         Transmitter::queue.erase(Transmitter::queue.begin() + index);
-                    //                     }
-                    //                 }
-                    //             }
-                    //         }
-                    //     }
-                    // }
+                        if (to == This::ID.getIDInHexString() &&
+                            verifyRepeaterNode(HexConverter::hexStringToUShort(from)))
+                        {
+                            if (key == F("ACK") && value.toInt() == 1)
+                            {
+                                if (!Transmitter::queue.empty())
+                                {
+                                    if (Transmitter::queue.front().isSent && Transmitter::queue.front().to.startsWith(from))
+                                    {
+                                        setDisplayValue(Transmitter::queue.front().id, Transmitter::queue.front().value);
+                                        Transmitter::queue.pop_front();
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -414,58 +463,65 @@ void loop()
         }
     }
 
-    // for (Node_DisplayNode::setPointerToHome();
-    //      Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
-    //      Node_DisplayNode::preincrementPointer())
-    // {
-    //     const unsigned int currentDisplayValue = countDisplayValue(displayNodes[Node_DisplayNode::getPointer()].getDisplayID());
-    //     if (displayNodes[Node_DisplayNode::getPointer()].getDisplayValue() != currentDisplayValue)
-    //     {
-    //         Transmitter::Queue newTransmission{displayNodes[Node_DisplayNode::getPointer()].getDisplayID(),
-    //                                            displayNodes[Node_DisplayNode::getPointer()].getDisplayRoute(),
-    //                                            F("NUM"),
-    //                                            static_cast<unsigned char>(currentDisplayValue)};
+    // Transmission queue management routine, adds queues
+    for (Node_DisplayNode::setPointerToHome();
+         Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
+         Node_DisplayNode::preincrementPointer())
+    {
+        const unsigned int currentDisplayValue = countDisplayValue(displayNodes[Node_DisplayNode::getPointer()].getDisplayID());
+        if (displayNodes[Node_DisplayNode::getPointer()].getDisplayValue() != currentDisplayValue)
+        {
+            Transmitter::Queue newTransmission{displayNodes[Node_DisplayNode::getPointer()].getDisplayID(),
+                                               displayNodes[Node_DisplayNode::getPointer()].getDisplayRoute(),
+                                               F("NUM"),
+                                               static_cast<unsigned char>(currentDisplayValue)};
 
-    //         bool sameTransmissionFound = false;
-    //         for (size_t index = 0U; index < Transmitter::queue.size(); ++index)
-    //         {
-    //             if (Transmitter::queue.at(index).id == newTransmission.id)
-    //             {
-    //                 sameTransmissionFound = true;
-    //                 break;
-    //             }
-    //         }
+            bool sameTransmissionFound = false;
+            if (!Transmitter::queue.empty())
+            {
+                for (size_t index = 0U; index < Transmitter::queue.size(); ++index)
+                {
+                    // The comparison operator used here does not compare the 'value' integer
+                    if (Transmitter::queue.at(index) == newTransmission)
+                    {
+                        sameTransmissionFound = true;
+                        break;
+                    }
+                }
+            }
 
-    //         if (!sameTransmissionFound)
-    //         {
-    //             Transmitter::queue.push_back(newTransmission);
-    //         }
-    //     }
-    // }
+            if (!sameTransmissionFound)
+            {
+                Transmitter::queue.push_back(newTransmission);
+            }
+        }
+    }
 
-    // for (size_t index = 0U; index < Transmitter::queue.size(); ++index)
-    // {
-    //     if (!Transmitter::queue.at(index).isSent)
-    //     {
-    //         String message;
-    //         message.reserve(18U);
+    // Transmission routine, transmits data from the front queue
+    if (!Transmitter::queue.empty())
+    {
+        if (!Transmitter::queue.front().isSent)
+        {
+            String message;
+            message.reserve(18U);
 
-    //         message += '<';
-    //         message += Transmitter::queue.at(index).to;
-    //         message += '/';
-    //         message += This::ID.getIDInHexString();
-    //         message += '/';
-    //         message += Transmitter::queue.at(index).key;
-    //         message += '/';
-    //         message += Transmitter::queue.at(index).value;
-    //         message += '>';
+            message += '<';
+            message += Transmitter::queue.front().to;
+            message += '/';
+            message += This::ID.getIDInHexString();
+            message += '/';
+            message += Transmitter::queue.front().key;
+            message += '/';
+            message += Transmitter::queue.front().value;
+            message += '>';
 
-    //         Transmitter::serial.print(message);
+            Transmitter::serial.print(message);
 
-    //         Transmitter::queue.at(index).isSent = true;
-    //     }
-    // }
+            Transmitter::queue.front().isSent = true;
+        }
+    }
 
+    // Query routine, do until the queue is empty
     if (WiFi.status() == WL_CONNECTED)
     {
         while (!Query::queue.empty())
@@ -652,8 +708,8 @@ void Query::loadSensorNodes()
             HexConverter::hexStringToUShort(Query::document[index]["node_id"]),
             HexConverter::hexStringToUShort(Query::document[index]["disp_rt"]));
 
-        sensorNodes[Node_SensorNode::getPointer()].setNodeStatus(Query::document[index]["n_stats"]);
-        sensorNodes[Node_SensorNode::getPointer()].setNodeBattery(Query::document[index]["battery"]);
+        sensorNodes[Node_SensorNode::getPointer()].setNodeStatus(Query::document[index]["n_stats"].as<String>().toInt());  // Using toInt() to prevent conversion error
+        sensorNodes[Node_SensorNode::getPointer()].setNodeBattery(Query::document[index]["battery"].as<String>().toInt()); // Using toInt() to prevent conversion error
 
         Node_SensorNode::preincrementPointer();
     }
@@ -814,23 +870,14 @@ const unsigned int countDisplayValue(const unsigned short displayID)
 {
     unsigned int count = 0U;
 
-    for (Node_DisplayNode::setPointerToHome();
-         Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
-         Node_DisplayNode::preincrementPointer())
+    for (Node_SensorNode::setPointerToHome();
+         Node_SensorNode::getPointer() < Node_SensorNode::getTotalNumberOfNodes();
+         Node_SensorNode::preincrementPointer())
     {
-        if (displayNodes[Node_DisplayNode::getPointer()] == displayID)
+        if (sensorNodes[Node_SensorNode::getPointer()].getDisplayID() == displayID &&
+            !sensorNodes[Node_SensorNode::getPointer()].getNodeStatus())
         {
-            for (Node_SensorNode::setPointerToHome();
-                 Node_SensorNode::getPointer() < Node_SensorNode::getTotalNumberOfNodes();
-                 Node_SensorNode::preincrementPointer())
-            {
-                if (sensorNodes[Node_SensorNode::getPointer()].getDisplayID() == displayID)
-                {
-                    ++count;
-                }
-            }
-
-            break;
+            ++count;
         }
     }
 

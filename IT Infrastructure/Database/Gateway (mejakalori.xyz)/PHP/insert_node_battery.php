@@ -16,11 +16,26 @@ if (empty($node_id)) {
     exit();
 }
 
-if (empty($battery) || $battery <= 0 || $battery >= 5) {
+if ($battery != 1 && $battery != 2 && $battery != 3 && $battery != 4) {
     exit();
 }
 
-$query = "INSERT INTO `node_batteries` (`node_id`, `battery`) VALUES ('$node_id', $battery)";
+$query = "
+SELECT `battery` 
+FROM   `node_batteries` 
+WHERE  `node_id` = '$node_id' 
+ORDER  BY `t_stamp` DESC 
+LIMIT  1";
+
+$result = $mysqli->query($query);
+$previous_battery = $result->fetch_row()[0];
+
+if ($previous_battery == $battery) {
+    echo 'SUCCESS';
+    exit();
+}
+
+$query = "INSERT INTO `node_batteries` (`node_id`, `battery`) VALUES ('$node_id', '$battery')";
 
 if ($result = $mysqli->query($query)) {
     echo 'SUCCESS';
