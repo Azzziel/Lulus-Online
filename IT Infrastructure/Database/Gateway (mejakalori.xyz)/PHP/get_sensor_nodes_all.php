@@ -69,7 +69,7 @@ SELECT `node_id`,
         LIMIT  1) AS 'battery' 
 FROM   `node_devices` 
 WHERE  `node_devices`.`index` >= $filtered_query_index 
-ORDER  BY `node_id` 
+ORDER  BY `index` 
 LIMIT  $query_limit";
 
 $result = $mysqli->query($query);

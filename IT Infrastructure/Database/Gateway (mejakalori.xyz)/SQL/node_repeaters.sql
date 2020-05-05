@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS `u216319883_nodesens_db`.`node_repeaters`;
-CREATE TABLE `u216319883_nodesens_db`.`node_repeaters` (
+DROP TABLE IF EXISTS `onspotmy_node_db`.`node_repeaters`;
+CREATE TABLE `onspotmy_node_db`.`node_repeaters` (
   `index` TINYINT UNSIGNED AUTO_INCREMENT NOT NULL,
   `rptr_id` CHAR(4) NOT NULL,
   -- -------------------------------------------------------
@@ -15,7 +15,7 @@ CREATE TABLE `u216319883_nodesens_db`.`node_repeaters` (
   PRIMARY KEY (`index`),
   UNIQUE `UNIQUE_ID` (`rptr_id`)
 ) ENGINE = InnoDB;
-INSERT INTO `u216319883_nodesens_db`.`node_repeaters` (`rptr_id`, `send_rt`)
+INSERT INTO `onspotmy_node_db`.`node_repeaters` (`rptr_id`, `send_rt`)
 VALUES
   ('AA01', 'AAA1'),
   ('AA02', 'AA01');

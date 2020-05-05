@@ -27,8 +27,8 @@ const unsigned long MONITOR_SPEED = 115200UL;
 
 const char WIFI_SSID[] PROGMEM = "HOME-NETWORK";
 const char WIFI_PASS[] PROGMEM = ":Waffle/192/Licious:";
-const char SERVER_URL[] PROGMEM = "http://mejakalori.xyz/NodeTest/";
-const char SERVER_KEY[] PROGMEM = "2fad7ae4be04ce093c8a9e48511fdf6c";
+const char SERVER_URL[] PROGMEM = "http://onspot.my.id/gateway/";
+const char SERVER_KEY[] PROGMEM = "5cb4bf3e42ff76ca9186850b9017bdc8";
 
 namespace This
 {
@@ -258,6 +258,8 @@ void setup()
         while (true) // Halt operation
             delay(0U);
     }
+
+    Transmitter::serial.stopListening();
 
     // Turn the LED off, by this point it is proven that everything above has succeeded
     digitalWrite(BUILTIN_LED, LOW);
