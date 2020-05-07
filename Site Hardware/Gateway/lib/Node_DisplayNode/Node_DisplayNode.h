@@ -10,12 +10,8 @@ public:
     Node_DisplayNode() { ++totalNumberOfDisplayObjects; }
     ~Node_DisplayNode();
 
-    void begin(const String &id, const String &route)
-    {
-        begin(HexConverter::toUShort(id), route);
-    }
-
-    void begin(const unsigned short id, const String &route);
+    void begin(const String &id, const String &route, const bool isMain) { begin(HexConverter::toUShort(id), route, isMain); }
+    void begin(const unsigned short id, const String &route, const bool isMain);
     void end();
 
     const bool operator==(const unsigned short id) const { return id == getDisplayID(); }
@@ -28,6 +24,8 @@ public:
     void unsetDisplayRoute();
 
     const String &getDisplayRoute();
+
+    bool isMain() { return isTheMainDisplay; }
 
     void setDisplayValue(const unsigned short value) { displayValue = value; }
     const unsigned short getDisplayValue() const { return displayValue; }
@@ -45,6 +43,7 @@ private:
 
     unsigned short displayID{};
     const String *displayRoute{};
+    bool isTheMainDisplay{};
 
     unsigned short displayValue{};
 

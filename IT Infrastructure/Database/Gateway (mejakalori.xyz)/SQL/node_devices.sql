@@ -9,13 +9,9 @@ CREATE TABLE `onspotmy_node_db`.`node_devices` (
   FOREIGN KEY (`disp_rt`) REFERENCES `node_displays` (`disp_id`),
   UNIQUE `UNIQUE_ID` (`node_id`)
 ) ENGINE = InnoDB;
-INSERT INTO `onspotmy_node_db`.`node_devices` (
-    `node_id`,
-    `rptr_rt`,
-    `disp_rt`
-  )
+INSERT INTO `onspotmy_node_db`.`node_devices` (`node_id`, `rptr_rt`, `disp_rt`)
 VALUES
-  ('A001', 'AA01', 'AB01'),
-  ('A002', 'AA01', 'AB01'),
+  ('A001', 'AA01', NULL),
+  ('A002', 'AA01', NULL),
   ('A003', 'AA02', NULL),
   ('A004', 'AA02', NULL);

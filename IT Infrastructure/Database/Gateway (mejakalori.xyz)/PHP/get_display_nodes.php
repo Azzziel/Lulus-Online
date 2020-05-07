@@ -11,7 +11,8 @@ if (($auth_key != $_GET['auth_key']) && ($auth_key != $_POST['auth_key'])) {
 
 $query = "
 SELECT `disp_id`, 
-       `recv_rt` 
+       `recv_rt`, 
+       `is_main` 
 FROM   `node_displays` 
 ORDER BY `disp_id`";
 

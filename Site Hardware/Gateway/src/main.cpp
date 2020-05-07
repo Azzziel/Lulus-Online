@@ -30,6 +30,9 @@ const char WIFI_PASS[] PROGMEM = ":Waffle/192/Licious:";
 const char SERVER_URL[] PROGMEM = "http://onspot.my.id/gateway/";
 const char SERVER_KEY[] PROGMEM = "5cb4bf3e42ff76ca9186850b9017bdc8";
 
+// Definitions to seed random()
+const unsigned int NOISE_PIN = 36;
+
 namespace This
 {
 const unsigned int ID_SAVE_ADDRESS = 0U;
@@ -102,9 +105,11 @@ Node_HC12 HC12(&serial, SET);
 const uint32_t BAUDRATE = 2400U;
 const uint8_t CHANNEL = 13U;
 
+const long timeLimit() { return random(5000, 12000); }
+
 struct Queue
 {
-    Queue(const unsigned short device_id, const String &t, const String &k, const unsigned char v) : id{device_id}, to{t}, key{k}, value{v} {}
+    Queue(const unsigned short device_id, const String &t, const String &k, const unsigned char v) : id{device_id}, to{t}, key{k}, value{v}, millisLimit{0UL} {}
 
     const unsigned short id;
     bool isSent = false;
@@ -112,6 +117,8 @@ struct Queue
     const String to;
     const String key;
     const unsigned char value;
+
+    unsigned long millisLimit;
 
     bool operator==(const Queue &q) const
     {
@@ -162,6 +169,8 @@ const String encodeDisplayRoute(const unsigned short displayID, const unsigned s
 const unsigned int countDisplayValue(const String &displayID);
 const unsigned int countDisplayValue(const unsigned short displayID);
 
+const unsigned int countMainDisplayValue();
+
 void setDisplayValue(const String &displayID, const unsigned short displayValue);
 void setDisplayValue(const unsigned short displayID, const unsigned short displayValue);
 
@@ -176,6 +185,9 @@ POSTHandler post(&client, SERVER_URL, SERVER_KEY);
 
 void setup()
 {
+    pinMode(NOISE_PIN, INPUT);
+    randomSeed(analogRead(NOISE_PIN));
+
     Serial.begin(MONITOR_SPEED);
 
     /* Uncomment this section to write EEPROM for the first time */
@@ -234,7 +246,16 @@ void setup()
          Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
          Node_DisplayNode::preincrementPointer())
     {
-        const unsigned int currentDisplayValue = countDisplayValue(displayNodes[Node_DisplayNode::getPointer()].getDisplayID());
+        unsigned int currentDisplayValue;
+
+        if (displayNodes[Node_DisplayNode::getPointer()].isMain())
+        {
+            currentDisplayValue = countMainDisplayValue();
+        }
+        else
+        {
+            currentDisplayValue = countDisplayValue(displayNodes[Node_DisplayNode::getPointer()].getDisplayID());
+        }
 
         displayNodes[Node_DisplayNode::getPointer()].setDisplayValue(currentDisplayValue);
 
@@ -267,6 +288,8 @@ void setup()
 
 void loop()
 {
+    randomSeed(analogRead(NOISE_PIN));
+
     // Enables manual serial command
     if (Serial.available())
     {
@@ -342,6 +365,10 @@ void loop()
             {
                 if (Message::isSafeForStrtok(messageBuffer, sizeof(messageBuffer)))
                 {
+                    Serial.print("[M] Message received: ");
+                    Serial.print(messageBuffer);
+                    Serial.println();
+
                     const char delimiters[]{Message::SEPARATOR, '\0'};
 
                     const unsigned int numberOfTokens = Message::countTokens(messageBuffer, strlen(messageBuffer));
@@ -369,6 +396,10 @@ void loop()
                                     message += '/';
                                     message += to;
                                     message += F("/ACK/1>");
+
+                                    Serial.print("[M] Sending acknowledge: ");
+                                    Serial.print(message);
+                                    Serial.println();
 
                                     Transmitter::serial.print(message);
 
@@ -407,6 +438,10 @@ void loop()
                                     message += '/';
                                     message += to;
                                     message += F("/ACK/1>");
+
+                                    Serial.print("[M] Sending acknowledge: ");
+                                    Serial.print(message);
+                                    Serial.println();
 
                                     Transmitter::serial.print(message);
 
@@ -470,7 +505,17 @@ void loop()
          Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
          Node_DisplayNode::preincrementPointer())
     {
-        const unsigned int currentDisplayValue = countDisplayValue(displayNodes[Node_DisplayNode::getPointer()].getDisplayID());
+        unsigned int currentDisplayValue;
+
+        if (displayNodes[Node_DisplayNode::getPointer()].isMain())
+        {
+            currentDisplayValue = countMainDisplayValue();
+        }
+        else
+        {
+            currentDisplayValue = countDisplayValue(displayNodes[Node_DisplayNode::getPointer()].getDisplayID());
+        }
+
         if (displayNodes[Node_DisplayNode::getPointer()].getDisplayValue() != currentDisplayValue)
         {
             Transmitter::Queue newTransmission{displayNodes[Node_DisplayNode::getPointer()].getDisplayID(),
@@ -502,7 +547,8 @@ void loop()
     // Transmission routine, transmits data from the front queue
     if (!Transmitter::queue.empty())
     {
-        if (!Transmitter::queue.front().isSent)
+        if (!Transmitter::queue.front().millisLimit ||
+            Transmitter::queue.front().millisLimit < millis())
         {
             String message;
             message.reserve(18U);
@@ -517,8 +563,13 @@ void loop()
             message += Transmitter::queue.front().value;
             message += '>';
 
+            Serial.print("[M] Sending update to LED matrix: ");
+            Serial.print(message);
+            Serial.println();
+
             Transmitter::serial.print(message);
 
+            Transmitter::queue.front().millisLimit = millis() + Transmitter::timeLimit();
             Transmitter::queue.front().isSent = true;
         }
     }
@@ -532,6 +583,12 @@ void loop()
             {
                 post.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id).c_str());
                 post.addRequestData("n_stats", String(Query::queue.front().value).c_str());
+
+                Serial.print("[M] Updating ");
+                Serial.print(HexConverter::toString(Query::queue.front().node_id));
+                Serial.print(" in the database to ");
+                Serial.print(Query::queue.front().value ? "PARK" : "EMPT");
+                Serial.println();
 
                 int httpCode;
                 const String payload = post.getStringPayload("insert_node_status.php", &httpCode);
@@ -557,6 +614,7 @@ void loop()
                 else
                 {
                     Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
+                    break;
                 }
             }
             else if (Query::queue.front().type == Node_SensorNode::Keys::BAT)
@@ -588,6 +646,7 @@ void loop()
                 else
                 {
                     Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
+                    break;
                 }
             }
         }
@@ -665,7 +724,8 @@ void Query::loadDisplayNodes()
             HexConverter::toUShort(Query::document[index]["disp_id"]),
             encodeDisplayRoute(HexConverter::toUShort(Query::document[index]["disp_id"]),
                                HexConverter::toUShort(Query::document[index]["recv_rt"]),
-                               Message::SUBSEPARATOR));
+                               Message::SUBSEPARATOR),
+            Query::document[index]["is_main"]);
 
         Node_DisplayNode::preincrementPointer();
     }
@@ -877,6 +937,23 @@ const unsigned int countDisplayValue(const unsigned short displayID)
     {
         if (sensorNodes[Node_SensorNode::getPointer()].getDisplayID() == displayID &&
             !sensorNodes[Node_SensorNode::getPointer()].getNodeStatus())
+        {
+            ++count;
+        }
+    }
+
+    return count;
+}
+
+const unsigned int countMainDisplayValue()
+{
+    unsigned int count = 0U;
+
+    for (Node_SensorNode::setPointerToHome();
+         Node_SensorNode::getPointer() < Node_SensorNode::getTotalNumberOfNodes();
+         Node_SensorNode::preincrementPointer())
+    {
+        if (!sensorNodes[Node_SensorNode::getPointer()].getNodeStatus())
         {
             ++count;
         }

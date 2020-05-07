@@ -10,12 +10,13 @@ Node_DisplayNode::~Node_DisplayNode()
     --totalNumberOfDisplayObjects;
 }
 
-void Node_DisplayNode::begin(const unsigned short id, const String &route)
+void Node_DisplayNode::begin(const unsigned short id, const String &route, const bool isMain)
 {
     if (!displayID)
     {
         displayID = id;
         setDisplayRoute(route);
+        isTheMainDisplay = isMain;
 
         ++totalNumberOfDisplays;
     }
@@ -65,7 +66,9 @@ void Node_DisplayNode::printTableHeader()
 
     Serial.print("D_ID");
     Serial.print('\t');
-    Serial.print("COMPLETE_ROUTE");
+    Serial.print("MAIN");
+    Serial.print('\t');
+    Serial.print("ROUT");
 
     Serial.println();
 }
@@ -76,6 +79,8 @@ void Node_DisplayNode::printTable()
     Serial.print('\t');
 
     Serial.print(getDisplayIDInHexString());
+    Serial.print('\t');
+    Serial.print(isMain() ? "TRUE" : "FALS");
     Serial.print('\t');
     Serial.print(getDisplayRoute());
 
