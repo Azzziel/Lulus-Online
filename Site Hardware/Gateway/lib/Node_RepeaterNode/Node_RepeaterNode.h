@@ -12,20 +12,20 @@ public:
 
     void begin(const String &id, const String &route)
     {
-        begin(HexConverter::hexStringToUShort(id), HexConverter::hexStringToUShort(route));
+        begin(HexConverter::toUShort(id), HexConverter::toUShort(route));
     }
 
     void begin(const unsigned short id, const unsigned short route);
     void end();
 
     const bool operator==(const unsigned short id) const { return id == getRepeaterID(); }
-    const bool operator==(const String &id) const { return operator==(HexConverter::hexStringToUShort(id)); }
+    const bool operator==(const String &id) const { return operator==(HexConverter::toUShort(id)); }
 
     const unsigned short getRepeaterID() const { return repeaterID; }
-    const String getRepeaterIDInHexString() const { return HexConverter::UIntToHexString(repeaterID, 4); }
+    const String getRepeaterIDInHexString() const { return HexConverter::toString(repeaterID, 4); }
 
     const unsigned short getRouteID() const { return repeaterRoute; }
-    const String getRouteIDInHexString() const { return HexConverter::UIntToHexString(repeaterRoute, 4); }
+    const String getRouteIDInHexString() const { return HexConverter::toString(repeaterRoute, 4); }
 
     void printTable();
 

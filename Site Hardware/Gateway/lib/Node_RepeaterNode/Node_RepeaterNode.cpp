@@ -1,8 +1,6 @@
 #include <Arduino.h>
 #include "Node_RepeaterNode.h"
 
-#include <HexConverter.h>
-
 unsigned int Node_RepeaterNode::totalNumberOfRepeaters{};
 unsigned int Node_RepeaterNode::totalNumberOfRepeaterObjects{};
 

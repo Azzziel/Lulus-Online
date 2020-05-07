@@ -19,7 +19,7 @@ public:
     const bool loadIDFromEEPROM(const unsigned int saveAddress, const char idSignature);
 
     const uint16_t getID() const { return ID.data; }
-    const String getIDInHexString() const { return HexConverter::UIntToHexString(getID()); }
+    const String getIDInHexString() const { return HexConverter::toString(getID(), 4); }
 
     const char getIDSignature() const { return ID.signature; }
 

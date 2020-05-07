@@ -1,8 +1,6 @@
 #include <Arduino.h>
 #include "Node_SensorNode.h"
 
-#include <HexConverter.h>
-
 const char *const Node_SensorNode::KEY_CAR = "CAR";
 const char *const Node_SensorNode::KEY_BAT = "BAT";
 

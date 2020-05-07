@@ -12,9 +12,9 @@
 #include <HTTPClient.h>
 
 #include <ArduinoJson.h>
-#include <Node_HC12.h>
+#include <Node_HC12.h>    // https://github.com/ivan0kurnia/Node_HC12
+#include <HexConverter.h> // https://github.com/ivan0kurnia/HexConverter
 
-#include <HexConverter.h>
 #include <POSTHandler.h>
 #include <PayloadHandler.h>
 #include <Divider.h>
@@ -180,7 +180,7 @@ void setup()
 
     /* Uncomment this section to write EEPROM for the first time */
     // EEPROM.begin(sizeof(Node_ID::ID_t));
-    // This::ID.putNewIDToEEPROM(This::ID_SAVE_ADDRESS, {'G', HexConverter::hexStringToUShort("AAA1")});
+    // This::ID.putNewIDToEEPROM(This::ID_SAVE_ADDRESS, {'G', HexConverter::toUShort("AAA1")});
     // EEPROM.end();
 
     EEPROM.begin(sizeof(Node_ID::ID_t));
@@ -354,8 +354,8 @@ void loop()
                         const String value = strtok(nullptr, delimiters);
 
                         if (to == This::ID.getIDInHexString() &&
-                            verifyRepeaterNode(HexConverter::hexStringToUShort(from)) &&
-                            verifySensorNode(HexConverter::hexStringToUShort(node)))
+                            verifyRepeaterNode(HexConverter::toUShort(from)) &&
+                            verifySensorNode(HexConverter::toUShort(node)))
                         {
                             if (key == Node_SensorNode::KEY_CAR)
                             {
@@ -373,7 +373,7 @@ void loop()
                                     Transmitter::serial.print(message);
 
                                     const Query::Queue newQuery{Node_SensorNode::Keys::CAR,
-                                                                HexConverter::hexStringToUShort(node),
+                                                                HexConverter::toUShort(node),
                                                                 static_cast<unsigned char>(value.toInt())};
 
                                     bool sameQueryFound = false;
@@ -411,7 +411,7 @@ void loop()
                                     Transmitter::serial.print(message);
 
                                     const Query::Queue newQuery{Node_SensorNode::Keys::BAT,
-                                                                HexConverter::hexStringToUShort(node),
+                                                                HexConverter::toUShort(node),
                                                                 static_cast<unsigned char>(value.toInt())};
 
                                     bool sameQueryFound = false;
@@ -443,7 +443,7 @@ void loop()
                         const String value = strtok(nullptr, delimiters);
 
                         if (to == This::ID.getIDInHexString() &&
-                            verifyRepeaterNode(HexConverter::hexStringToUShort(from)))
+                            verifyRepeaterNode(HexConverter::toUShort(from)))
                         {
                             if (key == F("ACK") && value.toInt() == 1)
                             {
@@ -530,7 +530,7 @@ void loop()
         {
             if (Query::queue.front().type == Node_SensorNode::Keys::CAR)
             {
-                post.addRequestData("node_id", HexConverter::UIntToHexString(Query::queue.front().node_id).c_str());
+                post.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id).c_str());
                 post.addRequestData("n_stats", String(Query::queue.front().value).c_str());
 
                 int httpCode;
@@ -561,7 +561,7 @@ void loop()
             }
             else if (Query::queue.front().type == Node_SensorNode::Keys::BAT)
             {
-                post.addRequestData("node_id", HexConverter::UIntToHexString(Query::queue.front().node_id).c_str());
+                post.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id).c_str());
                 post.addRequestData("battery", String(Query::queue.front().value).c_str());
 
                 int httpCode;
@@ -662,11 +662,10 @@ void Query::loadDisplayNodes()
         }
 
         displayNodes[Node_DisplayNode::getPointer()].begin(
-            HexConverter::hexStringToUShort(Query::document[index]["disp_id"]),
-            encodeDisplayRoute(
-                HexConverter::hexStringToUShort(Query::document[index]["disp_id"]),
-                HexConverter::hexStringToUShort(Query::document[index]["recv_rt"]),
-                Message::SUBSEPARATOR));
+            HexConverter::toUShort(Query::document[index]["disp_id"]),
+            encodeDisplayRoute(HexConverter::toUShort(Query::document[index]["disp_id"]),
+                               HexConverter::toUShort(Query::document[index]["recv_rt"]),
+                               Message::SUBSEPARATOR));
 
         Node_DisplayNode::preincrementPointer();
     }
@@ -687,8 +686,8 @@ void Query::loadRepeaterNodes()
         }
 
         repeaterNodes[Node_RepeaterNode::getPointer()].begin(
-            HexConverter::hexStringToUShort(Query::document[index]["rptr_id"]),
-            HexConverter::hexStringToUShort(Query::document[index]["send_rt"]));
+            HexConverter::toUShort(Query::document[index]["rptr_id"]),
+            HexConverter::toUShort(Query::document[index]["send_rt"]));
 
         Node_RepeaterNode::preincrementPointer();
     }
@@ -707,8 +706,8 @@ void Query::loadSensorNodes()
         }
 
         sensorNodes[Node_SensorNode::getPointer()].begin(
-            HexConverter::hexStringToUShort(Query::document[index]["node_id"]),
-            HexConverter::hexStringToUShort(Query::document[index]["disp_rt"]));
+            HexConverter::toUShort(Query::document[index]["node_id"]),
+            HexConverter::toUShort(Query::document[index]["disp_rt"]));
 
         sensorNodes[Node_SensorNode::getPointer()].setNodeStatus(Query::document[index]["n_stats"].as<String>().toInt());  // Using toInt() to prevent conversion error
         sensorNodes[Node_SensorNode::getPointer()].setNodeBattery(Query::document[index]["battery"].as<String>().toInt()); // Using toInt() to prevent conversion error
@@ -818,8 +817,8 @@ const unsigned int Message::countTokens(const char *const string, const size_t l
 const String encodeDisplayRoute(const String &displayID, const String &receiverRouteID, const char separator)
 {
     return encodeDisplayRoute(
-        HexConverter::hexStringToUShort(displayID),
-        HexConverter::hexStringToUShort(receiverRouteID),
+        HexConverter::toUShort(displayID),
+        HexConverter::toUShort(receiverRouteID),
         separator);
 }
 
@@ -852,7 +851,7 @@ const String encodeDisplayRoute(const unsigned short displayID, const unsigned s
     String completeRoute;
     for (size_t index = routes.size() - 2 /* Ignore the last data in the vector */; index < routes.size(); --index)
     {
-        completeRoute += HexConverter::UIntToHexString(routes.at(index));
+        completeRoute += HexConverter::toString(routes.at(index));
 
         if (index)
         {
@@ -865,7 +864,7 @@ const String encodeDisplayRoute(const unsigned short displayID, const unsigned s
 
 const unsigned int countDisplayValue(const String &displayID)
 {
-    return countDisplayValue(HexConverter::hexStringToUShort(displayID));
+    return countDisplayValue(HexConverter::toUShort(displayID));
 }
 
 const unsigned int countDisplayValue(const unsigned short displayID)
@@ -888,7 +887,7 @@ const unsigned int countDisplayValue(const unsigned short displayID)
 
 void setDisplayValue(const String &displayID, const unsigned short displayValue)
 {
-    setDisplayValue(HexConverter::hexStringToUShort(displayID), displayValue);
+    setDisplayValue(HexConverter::toUShort(displayID), displayValue);
 }
 
 void setDisplayValue(const unsigned short displayID, const unsigned short displayValue)
@@ -921,7 +920,7 @@ const bool isArraySet(const T *const t, const size_t length)
 
 const bool verifySensorNode(const String &ID)
 {
-    return verifySensorNode(HexConverter::hexStringToUShort(ID));
+    return verifySensorNode(HexConverter::toUShort(ID));
 }
 
 const bool verifySensorNode(unsigned short ID)
@@ -941,7 +940,7 @@ const bool verifySensorNode(unsigned short ID)
 
 const bool verifyRepeaterNode(const String &ID)
 {
-    return verifyRepeaterNode(HexConverter::hexStringToUShort(ID));
+    return verifyRepeaterNode(HexConverter::toUShort(ID));
 }
 
 const bool verifyRepeaterNode(unsigned short ID)

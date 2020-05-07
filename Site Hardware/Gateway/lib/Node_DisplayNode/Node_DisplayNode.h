@@ -12,17 +12,17 @@ public:
 
     void begin(const String &id, const String &route)
     {
-        begin(HexConverter::hexStringToUShort(id), route);
+        begin(HexConverter::toUShort(id), route);
     }
 
     void begin(const unsigned short id, const String &route);
     void end();
 
     const bool operator==(const unsigned short id) const { return id == getDisplayID(); }
-    const bool operator==(const String &id) const { return operator==(HexConverter::hexStringToUShort(id)); }
+    const bool operator==(const String &id) const { return operator==(HexConverter::toUShort(id)); }
 
     const unsigned short getDisplayID() const { return displayID; }
-    const String getDisplayIDInHexString() const { return HexConverter::UIntToHexString(getDisplayID(), 4); }
+    const String getDisplayIDInHexString() const { return HexConverter::toString(getDisplayID(), 4); }
 
     void setDisplayRoute(const String &route);
     void unsetDisplayRoute();

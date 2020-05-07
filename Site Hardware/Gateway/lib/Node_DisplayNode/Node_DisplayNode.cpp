@@ -1,8 +1,6 @@
 #include <Arduino.h>
 #include "Node_DisplayNode.h"
 
-#include <HexConverter.h>
-
 unsigned int Node_DisplayNode::totalNumberOfDisplays{};
 unsigned int Node_DisplayNode::totalNumberOfDisplayObjects{};
 
