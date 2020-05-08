@@ -43,12 +43,14 @@ public:
 
     enum Keys
     {
-        CAR,
-        BAT
+        CAR = 1,
+        BAT,
+        RST
     };
 
-    static const char *const KEY_CAR; // 0 in enum
-    static const char *const KEY_BAT; // 1 in enum
+    static const char *const KEY_CAR; // 1 in enum
+    static const char *const KEY_BAT; // 2 in enum
+    static const char *const KEY_RST; // 3 in enum
 
 private:
     static unsigned int totalNumberOfNodes;

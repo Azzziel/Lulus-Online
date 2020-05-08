@@ -3,6 +3,7 @@
 
 const char *const Node_SensorNode::KEY_CAR = "CAR";
 const char *const Node_SensorNode::KEY_BAT = "BAT";
+const char *const Node_SensorNode::KEY_RST = "RST";
 
 unsigned int Node_SensorNode::totalNumberOfNodes{};
 unsigned int Node_SensorNode::totalNumberOfNodeObjects{};

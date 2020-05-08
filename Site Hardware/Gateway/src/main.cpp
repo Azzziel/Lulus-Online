@@ -147,6 +147,7 @@ const unsigned int countTokens(const char *const string, const size_t length);
 
 // Access this array only by the class-provided pointer
 Node_SensorNode sensorNodes[512U];
+void iterateSensorNodes(void (*)());
 void printSensorNodes();
 
 const bool verifySensorNode(const String &ID);
@@ -154,6 +155,7 @@ const bool verifySensorNode(unsigned short ID);
 
 // Access this array only by the class-provided pointer
 Node_RepeaterNode repeaterNodes[32U];
+void iterateRepeaterNodes(void (*)());
 void printRepeaterNodes();
 
 const bool verifyRepeaterNode(const String &ID);
@@ -161,6 +163,7 @@ const bool verifyRepeaterNode(unsigned short ID);
 
 // Access this array only by the class-provided pointer
 Node_DisplayNode displayNodes[32U];
+void iterateDisplayNodes(void (*)());
 void printDisplayNodes();
 
 const String encodeDisplayRoute(const String &displayID, const String &receiverRouteID, const char separator);
@@ -242,10 +245,7 @@ void setup()
     }
     dividedQuery.clearArray();
 
-    for (Node_DisplayNode::setPointerToHome();
-         Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
-         Node_DisplayNode::preincrementPointer())
-    {
+    iterateDisplayNodes([]() {
         unsigned int currentDisplayValue;
 
         if (displayNodes[Node_DisplayNode::getPointer()].isMain())
@@ -265,7 +265,7 @@ void setup()
                                            static_cast<unsigned char>(currentDisplayValue)};
 
         Transmitter::queue.push_back(newTransmission);
-    }
+    });
     // ------------------------------------------------------------------------------------------------
 
     Serial.print(F("[M] Data retrieval done in "));
@@ -369,16 +369,19 @@ void loop()
                     Serial.print(messageBuffer);
                     Serial.println();
 
-                    const char delimiters[]{Message::SEPARATOR, '\0'};
+                    const char delimiters[]{Message::SEPARATOR, Message::SUBSEPARATOR, '\0'};
 
                     const unsigned int numberOfTokens = Message::countTokens(messageBuffer, strlen(messageBuffer));
                     if (numberOfTokens == 5U) // Regular message
                     {
-                        const String to = strtok(messageBuffer, delimiters);
-                        const String from = strtok(nullptr, delimiters);
+                        const String from = strtok(messageBuffer, delimiters);
+                        const String to = strtok(nullptr, delimiters);
                         const String node = strtok(nullptr, delimiters);
                         const String key = strtok(nullptr, delimiters);
                         const String value = strtok(nullptr, delimiters);
+
+                        bool isVerified = false;
+                        unsigned char keyType = 0;
 
                         if (to == This::ID.getIDInHexString() &&
                             verifyRepeaterNode(HexConverter::toUShort(from)) &&
@@ -388,85 +391,65 @@ void loop()
                             {
                                 if (value.toInt() == 0 || value.toInt() == 1)
                                 {
-                                    String message;
-                                    message.reserve(18U);
-
-                                    message += '<';
-                                    message += from;
-                                    message += '/';
-                                    message += to;
-                                    message += F("/ACK/1>");
-
-                                    Serial.print("[M] Sending acknowledge: ");
-                                    Serial.print(message);
-                                    Serial.println();
-
-                                    Transmitter::serial.print(message);
-
-                                    const Query::Queue newQuery{Node_SensorNode::Keys::CAR,
-                                                                HexConverter::toUShort(node),
-                                                                static_cast<unsigned char>(value.toInt())};
-
-                                    bool sameQueryFound = false;
-                                    if (!Query::queue.empty())
-                                    {
-                                        for (size_t index = 0U; index < Query::queue.size(); ++index)
-                                        {
-                                            if (Query::queue.at(index) == newQuery)
-                                            {
-                                                sameQueryFound = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    if (!sameQueryFound)
-                                    {
-                                        Query::queue.push_back(newQuery);
-                                    }
+                                    isVerified = true;
+                                    keyType = Node_SensorNode::Keys::CAR;
                                 }
                             }
                             else if (key == Node_SensorNode::KEY_BAT)
                             {
                                 if (value.toInt() == 1 || value.toInt() == 2 || value.toInt() == 3 || value.toInt() == 4)
                                 {
-                                    String message;
-                                    message.reserve(18U);
+                                    isVerified = true;
+                                    keyType = Node_SensorNode::Keys::BAT;
+                                }
+                            }
+                            else if (key == Node_SensorNode::KEY_RST)
+                            {
+                                if (value.toInt() == 1 || value.toInt() == 2 || value.toInt() == 3 || value.toInt() == 4)
+                                {
+                                    isVerified = true;
+                                    keyType = Node_SensorNode::Keys::RST;
+                                }
+                            }
+                        }
 
-                                    message += '<';
-                                    message += from;
-                                    message += '/';
-                                    message += to;
-                                    message += F("/ACK/1>");
+                        if (isVerified)
+                        {
+                            String message;
+                            message.reserve(18U);
 
-                                    Serial.print("[M] Sending acknowledge: ");
-                                    Serial.print(message);
-                                    Serial.println();
+                            message += '<';
+                            message += from;
+                            message += '/';
+                            message += to;
+                            message += F("/ACK/1>");
 
-                                    Transmitter::serial.print(message);
+                            Serial.print("[M] Sending acknowledge: ");
+                            Serial.print(message);
+                            Serial.println();
 
-                                    const Query::Queue newQuery{Node_SensorNode::Keys::BAT,
-                                                                HexConverter::toUShort(node),
-                                                                static_cast<unsigned char>(value.toInt())};
+                            Transmitter::serial.print(message);
 
-                                    bool sameQueryFound = false;
-                                    if (!Query::queue.empty())
+                            const Query::Queue newQuery{keyType,
+                                                        HexConverter::toUShort(node),
+                                                        static_cast<unsigned char>(value.toInt())};
+
+                            bool sameQueryFound = false;
+                            if (!Query::queue.empty())
+                            {
+                                for (size_t index = 0U; index < Query::queue.size(); ++index)
+                                {
+                                    if (Query::queue.at(index) == newQuery)
                                     {
-                                        for (size_t index = 0U; index < Query::queue.size(); ++index)
-                                        {
-                                            if (Query::queue.at(index) == newQuery)
-                                            {
-                                                sameQueryFound = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    if (!sameQueryFound)
-                                    {
-                                        Query::queue.push_back(newQuery);
+                                        sameQueryFound = true;
+                                        break;
                                     }
                                 }
+                            }
+
+                            if (!sameQueryFound)
+                            {
+                                Query::queue.push_back(newQuery);
                             }
                         }
                     }
@@ -484,7 +467,8 @@ void loop()
                             {
                                 if (!Transmitter::queue.empty())
                                 {
-                                    if (Transmitter::queue.front().isSent && Transmitter::queue.front().to.startsWith(from))
+                                    if (Transmitter::queue.front().isSent &&
+                                        Transmitter::queue.front().to.substring(5, 9) /* 5 to 9 is the second subtoken */ == from)
                                     {
                                         setDisplayValue(Transmitter::queue.front().id, Transmitter::queue.front().value);
                                         Transmitter::queue.pop_front();
@@ -501,10 +485,7 @@ void loop()
     }
 
     // Transmission queue management routine, adds queues
-    for (Node_DisplayNode::setPointerToHome();
-         Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
-         Node_DisplayNode::preincrementPointer())
-    {
+    iterateDisplayNodes([]() {
         unsigned int currentDisplayValue;
 
         if (displayNodes[Node_DisplayNode::getPointer()].isMain())
@@ -542,7 +523,7 @@ void loop()
                 Transmitter::queue.push_back(newTransmission);
             }
         }
-    }
+    });
 
     // Transmission routine, transmits data from the front queue
     if (!Transmitter::queue.empty())
@@ -640,6 +621,26 @@ void loop()
                             }
                         }
 
+                        Query::queue.pop_front();
+                    }
+                }
+                else
+                {
+                    Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
+                    break;
+                }
+            }
+            else if (Query::queue.front().type == Node_SensorNode::Keys::RST)
+            {
+                post.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id).c_str());
+
+                int httpCode;
+                const String payload = post.getStringPayload("insert_node_reset.php", &httpCode);
+
+                if (httpCode == t_http_codes::HTTP_CODE_OK)
+                {
+                    if (payload == F("SUCCESS"))
+                    {
                         Query::queue.pop_front();
                     }
                 }
@@ -836,7 +837,8 @@ const char *const Message::load(const char *const from, char *const to, const si
 
 const bool Message::isSafeForStrtok(const char *const string, const size_t size)
 {
-    char previousP = SEPARATOR;
+    char previousP1 = SEPARATOR;
+    char previousP2 = SUBSEPARATOR;
 
     if (*(string + size - 1) != '\0')
     {
@@ -845,12 +847,12 @@ const bool Message::isSafeForStrtok(const char *const string, const size_t size)
 
     for (const char *p = string; p < string + size; ++p)
     {
-        if (previousP == SEPARATOR && *p == SEPARATOR)
+        if ((previousP1 == SEPARATOR && *p == SEPARATOR) || (previousP2 == SUBSEPARATOR && *p == SUBSEPARATOR))
         {
             return false;
         }
 
-        previousP = *p;
+        previousP1 = previousP2 = *p;
     }
 
     return true;
@@ -859,16 +861,17 @@ const bool Message::isSafeForStrtok(const char *const string, const size_t size)
 const unsigned int Message::countTokens(const char *const string, const size_t length)
 {
     unsigned int count = 0;
-    char previousP = SEPARATOR;
+    char previousP1 = SEPARATOR;
+    char previousP2 = SUBSEPARATOR;
 
     for (const char *p = string; *p != '\0' && p <= string + length; ++p)
     {
-        if (previousP == SEPARATOR && *p != SEPARATOR)
+        if ((previousP1 == SEPARATOR && *p != SEPARATOR) || (previousP2 == SUBSEPARATOR && *p != SUBSEPARATOR))
         {
             ++count;
         }
 
-        previousP = *p;
+        previousP1 = previousP2 = *p;
     }
 
     return count;
@@ -909,7 +912,7 @@ const String encodeDisplayRoute(const unsigned short displayID, const unsigned s
     }
 
     String completeRoute;
-    for (size_t index = routes.size() - 2 /* Ignore the last data in the vector */; index < routes.size(); --index)
+    for (size_t index = routes.size() - 1; index < routes.size(); --index)
     {
         completeRoute += HexConverter::toString(routes.at(index));
 
@@ -1035,35 +1038,53 @@ const bool verifyRepeaterNode(unsigned short ID)
     return false;
 }
 
-void printSensorNodes()
+// This function is on trial
+void iterateSensorNodes(void (*f)())
 {
-    Node_SensorNode::printTableHeader();
     for (Node_SensorNode::setPointerToHome();
          Node_SensorNode::getPointer() < Node_SensorNode::getTotalNumberOfNodes();
          Node_SensorNode::preincrementPointer())
     {
-        sensorNodes[Node_SensorNode::getPointer()].printTable();
+        f();
+    }
+}
+
+void printSensorNodes()
+{
+    Node_SensorNode::printTableHeader();
+    iterateSensorNodes([]() { sensorNodes[Node_SensorNode::getPointer()].printTable(); });
+}
+
+// This function is on trial
+void iterateRepeaterNodes(void (*f)())
+{
+    for (Node_RepeaterNode::setPointerToHome();
+         Node_RepeaterNode::getPointer() < Node_RepeaterNode::getTotalNumberOfRepeaters();
+         Node_RepeaterNode::preincrementPointer())
+    {
+        f();
     }
 }
 
 void printRepeaterNodes()
 {
     Node_RepeaterNode::printTableHeader();
-    for (Node_RepeaterNode::setPointerToHome();
-         Node_RepeaterNode::getPointer() < Node_RepeaterNode::getTotalNumberOfRepeaters();
-         Node_RepeaterNode::preincrementPointer())
+    iterateRepeaterNodes([]() { repeaterNodes[Node_RepeaterNode::getPointer()].printTable(); });
+}
+
+// This function is on trial
+void iterateDisplayNodes(void (*f)())
+{
+    for (Node_DisplayNode::setPointerToHome();
+         Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
+         Node_DisplayNode::preincrementPointer())
     {
-        repeaterNodes[Node_RepeaterNode::getPointer()].printTable();
+        f();
     }
 }
 
 void printDisplayNodes()
 {
     Node_DisplayNode::printTableHeader();
-    for (Node_DisplayNode::setPointerToHome();
-         Node_DisplayNode::getPointer() < Node_DisplayNode::getTotalNumberOfDisplays();
-         Node_DisplayNode::preincrementPointer())
-    {
-        displayNodes[Node_DisplayNode::getPointer()].printTable();
-    }
+    iterateDisplayNodes([]() { displayNodes[Node_DisplayNode::getPointer()].printTable(); });
 }
