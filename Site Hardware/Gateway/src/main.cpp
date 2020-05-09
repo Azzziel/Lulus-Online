@@ -578,16 +578,13 @@ void loop()
                 {
                     if (payload == F("SUCCESS"))
                     {
-                        for (Node_SensorNode::setPointerToHome();
-                             Node_SensorNode::getPointer() < Node_SensorNode::getTotalNumberOfNodes();
-                             Node_SensorNode::preincrementPointer())
-                        {
+                        iterateSensorNodes([]() {
                             if (sensorNodes[Node_SensorNode::getPointer()] == Query::queue.front().node_id)
                             {
                                 sensorNodes[Node_SensorNode::getPointer()].setNodeStatus(Query::queue.front().value);
-                                break;
+                                return;
                             }
-                        }
+                        });
 
                         Query::queue.pop_front();
                     }
@@ -610,16 +607,13 @@ void loop()
                 {
                     if (payload == F("SUCCESS"))
                     {
-                        for (Node_SensorNode::setPointerToHome();
-                             Node_SensorNode::getPointer() < Node_SensorNode::getTotalNumberOfNodes();
-                             Node_SensorNode::preincrementPointer())
-                        {
+                        iterateSensorNodes([]() {
                             if (sensorNodes[Node_SensorNode::getPointer()] == Query::queue.front().node_id)
                             {
                                 sensorNodes[Node_SensorNode::getPointer()].setNodeBattery(Query::queue.front().value);
-                                break;
+                                return;
                             }
-                        }
+                        });
 
                         Query::queue.pop_front();
                     }
@@ -1038,7 +1032,7 @@ const bool verifyRepeaterNode(unsigned short ID)
     return false;
 }
 
-// This function is on trial
+// Doesn't support captures
 void iterateSensorNodes(void (*f)())
 {
     for (Node_SensorNode::setPointerToHome();
@@ -1055,7 +1049,7 @@ void printSensorNodes()
     iterateSensorNodes([]() { sensorNodes[Node_SensorNode::getPointer()].printTable(); });
 }
 
-// This function is on trial
+// Doesn't support captures
 void iterateRepeaterNodes(void (*f)())
 {
     for (Node_RepeaterNode::setPointerToHome();
@@ -1072,7 +1066,7 @@ void printRepeaterNodes()
     iterateRepeaterNodes([]() { repeaterNodes[Node_RepeaterNode::getPointer()].printTable(); });
 }
 
-// This function is on trial
+// Doesn't support captures
 void iterateDisplayNodes(void (*f)())
 {
     for (Node_DisplayNode::setPointerToHome();
