@@ -21,7 +21,7 @@ void loop() {
 
     unsigned long previousMicros = micros();
     while (true) {
-      if (micros() - previousMicros < 3000UL) {
+      if (micros() - previousMicros < 4000UL) {
         if (serial.available()) {
           buffer += static_cast<char>(serial.read());
           previousMicros = micros();

@@ -14,18 +14,18 @@ Node_HC12 hc(&serial, SET);
 MechaQMC5883 qmc;
 
 void setup() {
+  //  Serial.begin(115200);
   if (!hc.begin(2400, 1))
     halt();
+  Serial.begin(115200);
 
   Wire.begin();
   qmc.init();
   qmc.setMode(Mode_Continuous, ODR_200Hz, RNG_2G, OSR_512);
-
-  Serial.begin(115200);
 }
 
 void loop() {
-  const unsigned long interval = 1000UL;
+  const unsigned long interval = 500UL;
   static unsigned long previousMillis = millis() - interval;
   if (millis() - previousMillis >= interval) {
     int x, y, z;
@@ -33,8 +33,17 @@ void loop() {
 
     const double magnitude = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
 
-    Serial.println(magnitude);
-    serial.print(magnitude);
+    String toSend;
+    toSend += magnitude;
+    toSend += ' ';
+    toSend += x;
+    toSend += ' ';
+    toSend += y;
+    toSend += ' ';
+    toSend += z;
+
+    Serial.println(toSend);
+    serial.print(toSend);
 
     previousMillis = millis();
   }

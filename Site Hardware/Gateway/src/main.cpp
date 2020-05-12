@@ -27,7 +27,7 @@ const unsigned long MONITOR_SPEED = 115200UL;
 
 const char WIFI_SSID[] PROGMEM = "HOME-NETWORK";
 const char WIFI_PASS[] PROGMEM = ":Waffle/192/Licious:";
-const char SERVER_URL[] PROGMEM = "http://onspot.my.id/gateway/";
+const char SERVER_URL[] PROGMEM = "http://onspot.my.id/api/gateway/";
 const char SERVER_KEY[] PROGMEM = "5cb4bf3e42ff76ca9186850b9017bdc8";
 
 // Definitions to seed random()
@@ -181,6 +181,8 @@ void setDisplayValue(const unsigned short displayID, const unsigned short displa
 template <typename T>
 const bool isArraySet(const T *t, const size_t length);
 
+void printProcessTime(const char *const, void (*)());
+
 Divider dividedQuery;
 
 HTTPClient client;
@@ -206,7 +208,7 @@ void setup()
     {
         Serial.println(F("[M][E] EEPROM corrupt or not set"));
 
-        while (1) // Halt operation
+        while (true) // Halt operation
             delay(0);
     }
 
@@ -217,6 +219,23 @@ void setup()
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     while (WiFi.status() != WL_CONNECTED)
         delay(0U);
+
+    // for (size_t i = 0; i < 10; ++i)
+    // {
+    //     printProcessTime("Bench", []() {
+    //         int httpCode;
+    //         const String payload = post.getStringPayload(".php", &httpCode);
+
+    //         if (httpCode == t_http_codes::HTTP_CODE_OK)
+    //         {
+    //             // Do nothing
+    //         }
+    //         else
+    //         {
+    //             Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
+    //         }
+    //     });
+    // }
 
     post.addRequestData("gtwy_id", This::ID.getIDInHexString().c_str());
     Query::loadStringPayload("get_gateway_status.php", Query::getGatewayStatus, nullptr);
@@ -365,7 +384,7 @@ void loop()
             {
                 if (Message::isSafeForStrtok(messageBuffer, sizeof(messageBuffer)))
                 {
-                    Serial.print("[M] Message received: ");
+                    Serial.print(F("[M] Message received: "));
                     Serial.print(messageBuffer);
                     Serial.println();
 
@@ -405,7 +424,7 @@ void loop()
                             }
                             else if (key == Node_SensorNode::KEY_RST)
                             {
-                                if (value.toInt() == 1 || value.toInt() == 2 || value.toInt() == 3 || value.toInt() == 4)
+                                if (value.toInt() == 1)
                                 {
                                     isVerified = true;
                                     keyType = Node_SensorNode::Keys::RST;
@@ -424,7 +443,7 @@ void loop()
                             message += to;
                             message += F("/ACK/1>");
 
-                            Serial.print("[M] Sending acknowledge: ");
+                            Serial.print(F("[M] Sending acknowledge: "));
                             Serial.print(message);
                             Serial.println();
 
@@ -544,7 +563,7 @@ void loop()
             message += Transmitter::queue.front().value;
             message += '>';
 
-            Serial.print("[M] Sending update to LED matrix: ");
+            Serial.print(F("[M] Sending update to LED matrix: "));
             Serial.print(message);
             Serial.println();
 
@@ -556,18 +575,18 @@ void loop()
     }
 
     // Query routine, do until the queue is empty
-    if (WiFi.status() == WL_CONNECTED)
+    while (!Query::queue.empty())
     {
-        while (!Query::queue.empty())
+        if (WiFi.status() == WL_CONNECTED)
         {
             if (Query::queue.front().type == Node_SensorNode::Keys::CAR)
             {
                 post.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id).c_str());
                 post.addRequestData("n_stats", String(Query::queue.front().value).c_str());
 
-                Serial.print("[M] Updating ");
+                Serial.print(F("[M] Updating "));
                 Serial.print(HexConverter::toString(Query::queue.front().node_id));
-                Serial.print(" in the database to ");
+                Serial.print(F(" in the database to "));
                 Serial.print(Query::queue.front().value ? "PARK" : "EMPT");
                 Serial.println();
 
@@ -644,6 +663,10 @@ void loop()
                     break;
                 }
             }
+        }
+        else
+        {
+            break;
         }
     }
 }
@@ -1081,4 +1104,25 @@ void printDisplayNodes()
 {
     Node_DisplayNode::printTableHeader();
     iterateDisplayNodes([]() { displayNodes[Node_DisplayNode::getPointer()].printTable(); });
+}
+
+void printProcessTime(const char *const processName, void (*processes)())
+{
+    const unsigned long previousMicros = micros();
+    processes();
+    const unsigned long timeSpent = micros() - previousMicros;
+
+    Serial.print(F("[M] Spent "));
+    if (timeSpent > 1000UL)
+    {
+        Serial.print(timeSpent / 1000UL);
+        Serial.print(F(" ms to process: "));
+    }
+    else
+    {
+        Serial.print(timeSpent);
+        Serial.print(F(" us to process: "));
+    }
+    Serial.print(processName);
+    Serial.println();
 }
