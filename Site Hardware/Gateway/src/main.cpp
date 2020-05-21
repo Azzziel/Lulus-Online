@@ -35,114 +35,114 @@ const unsigned int NOISE_PIN = 36;
 
 namespace This
 {
-const unsigned int ID_SAVE_ADDRESS = 0U;
-const char ID_SIGNATURE = 'G';
+    const unsigned int ID_SAVE_ADDRESS = 0U;
+    const char ID_SIGNATURE = 'G';
 
-Node_ID ID;
+    Node_ID ID;
 } // namespace This
 
 namespace Query
 {
-StaticJsonDocument<5120U> document;
+    StaticJsonDocument<5120U> document;
 
-void loadStringPayload(const char *, void (*)(const String &, void (*)()), void (*)());
-void getSensorCount(const String &, void (*)());
-void getGatewayStatus(const String &, void (*)());
+    void loadStringPayload(const char *, void (*)(const String &, void (*)()), void (*)() = nullptr);
+    void getSensorCount(const String &, void (*)());
+    void getGatewayStatus(const String &, void (*)());
 
-void loadJsonPayload(const String &, void (*)());
-void loadDisplayNodes();
-void loadRepeaterNodes();
-void loadSensorNodes();
+    void loadJsonPayload(const String &, void (*)());
+    void loadDisplayNodes();
+    void loadRepeaterNodes();
+    void loadSensorNodes();
 
-struct Queue
-{
-    Queue(const unsigned char t, const unsigned short id, const unsigned char val) : type{t}, node_id{id}, value{val} {}
-
-    const unsigned char type; // Refers to the enum in Node_SensorNode
-
-    const unsigned short node_id;
-    const unsigned char value;
-
-    bool operator==(const Queue &q) const
+    struct Queue
     {
-        return this->type == q.type && this->node_id == q.node_id && this->value == q.value;
-    }
-};
+        Queue(const unsigned char t, const unsigned short id, const unsigned char val) : type{t}, node_id{id}, value{val} {}
 
-std::deque<Queue> queue;
+        const unsigned char type; // Refers to the enum in Node_SensorNode
+
+        const unsigned short node_id;
+        const unsigned char value;
+
+        bool operator==(const Queue &q) const
+        {
+            return this->type == q.type && this->node_id == q.node_id && this->value == q.value;
+        }
+    };
+
+    std::deque<Queue> queue;
 } // namespace Query
 
 namespace QueryByParts
 {
-const unsigned int LIMIT = 32U;
+    const unsigned int LIMIT = 32U;
 
-unsigned int index = 1U;
-unsigned int pointer = 0U;
+    unsigned int index = 1U;
+    unsigned int pointer = 0U;
 } // namespace QueryByParts
 
 namespace Receiver
 {
-const unsigned int SOFT_RX = 16U;
-const unsigned int SOFT_TX = 17U;
-SoftwareSerial serial(SOFT_RX, SOFT_TX);
+    const unsigned int SOFT_RX = 16U;
+    const unsigned int SOFT_TX = 17U;
+    SoftwareSerial serial(SOFT_RX, SOFT_TX);
 
-const unsigned int SET = 4U;
-Node_HC12 HC12(&serial, SET);
+    const unsigned int SET = 4U;
+    Node_HC12 HC12(&serial, SET);
 
-const uint32_t BAUDRATE = 2400U;
-const uint8_t CHANNEL = 19U;
+    const uint32_t BAUDRATE = 2400U;
+    const uint8_t CHANNEL = 19U;
 } // namespace Receiver
 
 namespace Transmitter
 {
-const unsigned int SOFT_RX = 26U;
-const unsigned int SOFT_TX = 27U;
-SoftwareSerial serial(SOFT_RX, SOFT_TX);
+    const unsigned int SOFT_RX = 26U;
+    const unsigned int SOFT_TX = 27U;
+    SoftwareSerial serial(SOFT_RX, SOFT_TX);
 
-const unsigned int SET = 25U;
-Node_HC12 HC12(&serial, SET);
+    const unsigned int SET = 25U;
+    Node_HC12 HC12(&serial, SET);
 
-const uint32_t BAUDRATE = 2400U;
-const uint8_t CHANNEL = 13U;
+    const uint32_t BAUDRATE = 2400U;
+    const uint8_t CHANNEL = 13U;
 
-const long timeLimit() { return random(5000, 12000); }
+    const long timeLimit() { return random(5000, 12000); }
 
-struct Queue
-{
-    Queue(const unsigned short device_id, const String &t, const String &k, const unsigned char v) : id{device_id}, to{t}, key{k}, value{v}, millisLimit{0UL} {}
-
-    const unsigned short id;
-    bool isSent = false;
-
-    const String to;
-    const String key;
-    const unsigned char value;
-
-    unsigned long millisLimit;
-
-    bool operator==(const Queue &q) const
+    struct Queue
     {
-        return this->id == q.id && this->to == q.to && this->key == q.key;
-    }
-};
+        Queue(const unsigned short device_id, const String &t, const String &k, const unsigned char v) : id{device_id}, to{t}, key{k}, value{v}, millisLimit{0UL} {}
 
-std::deque<Queue> queue;
+        const unsigned short id;
+        bool isSent = false;
+
+        const String to;
+        const String key;
+        const unsigned char value;
+
+        unsigned long millisLimit;
+
+        bool operator==(const Queue &q) const
+        {
+            return this->id == q.id && this->to == q.to && this->key == q.key;
+        }
+    };
+
+    std::deque<Queue> queue;
 } // namespace Transmitter
 
 namespace Message
 {
-const char START = '<';
-const char SEPARATOR = '/';
-const char SUBSEPARATOR = ':';
-const char END = '>';
+    const char START = '<';
+    const char SEPARATOR = '/';
+    const char SUBSEPARATOR = ':';
+    const char END = '>';
 
-const unsigned int MAX_SUBSTRING_LENGTH = 4U;
+    const unsigned int MAX_SUBSTRING_LENGTH = 4U;
 
-// Caution! Will crash if the 'from' char array is not terminated with '\0'
-const char *const load(const char *const from, char *const to, const size_t toSize);
+    // Caution! Will crash if the 'from' char array is not terminated with '\0'
+    const char *const load(const char *const from, char *const to, const size_t toSize);
 
-const bool isSafeForStrtok(const char *const string, const size_t size);
-const unsigned int countTokens(const char *const string, const size_t length);
+    const bool isSafeForStrtok(const char *const string, const size_t size);
+    const unsigned int countTokens(const char *const string, const size_t length);
 } // namespace Message
 
 // Access this array only by the class-provided pointer
@@ -183,7 +183,7 @@ const bool isArraySet(const T *t, const size_t length);
 
 void printProcessTime(const char *const, void (*)());
 
-Divider dividedQuery;
+Divider queryDivision;
 
 HTTPClient client;
 POSTHandler post(&client, SERVER_URL, SERVER_KEY);
@@ -197,14 +197,14 @@ void setup()
 
     /* Uncomment this section to write EEPROM for the first time */
     // EEPROM.begin(sizeof(Node_ID::ID_t));
-    // This::ID.putNewIDToEEPROM(This::ID_SAVE_ADDRESS, {'G', HexConverter::toUShort("AAA1")});
+    // This::ID.putNewIDToEEPROM(This::ID_SAVE_ADDRESS, {'G', 1, HexConverter::toUShort("AAA1")});
     // EEPROM.end();
 
     EEPROM.begin(sizeof(Node_ID::ID_t));
     This::ID.loadIDFromEEPROM(This::ID_SAVE_ADDRESS, This::ID_SIGNATURE);
     EEPROM.end();
 
-    if (!This::ID.getID())
+    if (!This::ID.getNodeID())
     {
         Serial.println(F("[M][E] EEPROM corrupt or not set"));
 
@@ -220,49 +220,39 @@ void setup()
     while (WiFi.status() != WL_CONNECTED)
         delay(0U);
 
-    // for (size_t i = 0; i < 10; ++i)
-    // {
-    //     printProcessTime("Bench", []() {
-    //         int httpCode;
-    //         const String payload = post.getStringPayload(".php", &httpCode);
-
-    //         if (httpCode == t_http_codes::HTTP_CODE_OK)
-    //         {
-    //             // Do nothing
-    //         }
-    //         else
-    //         {
-    //             Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
-    //         }
-    //     });
-    // }
-
-    post.addRequestData("gtwy_id", This::ID.getIDInHexString().c_str());
-    Query::loadStringPayload("get_gateway_status.php", Query::getGatewayStatus, nullptr);
+    post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
+    post.addRequestData("gtwy_id", This::ID.getNodeIDInHexString().c_str());
+    Query::loadStringPayload("get_gateway_status.php", Query::getGatewayStatus);
 
     Serial.print(F("[M] Gateway ID: "));
-    Serial.print(This::ID.getIDInHexString());
+    Serial.print(This::ID.getNodeIDInHexString());
     Serial.println();
 
     const unsigned long queryStartMillis = millis();
 
     // Query ------------------------------------------------------------------------------------------
+    post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
     Query::loadStringPayload("get_repeater_nodes.php", Query::loadJsonPayload, Query::loadRepeaterNodes);
+
+    post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
     Query::loadStringPayload("get_display_nodes.php", Query::loadJsonPayload, Query::loadDisplayNodes);
 
-    Query::loadStringPayload("count_sensor_nodes.php", Query::getSensorCount, nullptr);
+    post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
+    Query::loadStringPayload("count_sensor_nodes.php", Query::getSensorCount);
+
     Node_SensorNode::setPointerToHome();
-    while (QueryByParts::pointer < dividedQuery.getArraySize())
+    while (QueryByParts::pointer < queryDivision.getArraySize())
     {
+        post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
         post.addRequestData("query_index", String(QueryByParts::index).c_str());
         post.addRequestData("query_limit", String(QueryByParts::LIMIT).c_str());
 
-        Query::loadStringPayload("get_sensor_nodes_all.php", Query::loadJsonPayload, Query::loadSensorNodes);
+        Query::loadStringPayload("get_sensor_nodes.php", Query::loadJsonPayload, Query::loadSensorNodes);
 
-        QueryByParts::index += dividedQuery[QueryByParts::pointer];
+        QueryByParts::index += queryDivision[QueryByParts::pointer];
         ++QueryByParts::pointer;
     }
-    dividedQuery.clearArray();
+    queryDivision.clearArray();
 
     iterateDisplayNodes([]() {
         unsigned int currentDisplayValue;
@@ -402,7 +392,7 @@ void loop()
                         bool isVerified = false;
                         unsigned char keyType = 0;
 
-                        if (to == This::ID.getIDInHexString() &&
+                        if (to == This::ID.getNodeIDInHexString() &&
                             verifyRepeaterNode(HexConverter::toUShort(from)) &&
                             verifySensorNode(HexConverter::toUShort(node)))
                         {
@@ -479,7 +469,7 @@ void loop()
                         const String key = strtok(nullptr, delimiters);
                         const String value = strtok(nullptr, delimiters);
 
-                        if (to == This::ID.getIDInHexString() &&
+                        if (to == This::ID.getNodeIDInHexString() &&
                             verifyRepeaterNode(HexConverter::toUShort(from)))
                         {
                             if (key == F("ACK") && value.toInt() == 1)
@@ -556,7 +546,7 @@ void loop()
             message += '<';
             message += Transmitter::queue.front().to;
             message += '/';
-            message += This::ID.getIDInHexString();
+            message += This::ID.getNodeIDInHexString();
             message += '/';
             message += Transmitter::queue.front().key;
             message += '/';
@@ -691,7 +681,7 @@ void Query::loadStringPayload(const char *phpFilename, void (*stringLoader)(cons
 
 void Query::getSensorCount(const String &stringPayload, void (*)())
 {
-    dividedQuery.loadDivider(stringPayload.toInt(), QueryByParts::LIMIT);
+    queryDivision.loadDivider(stringPayload.toInt(), QueryByParts::LIMIT);
 }
 
 void Query::getGatewayStatus(const String &stringPayload, void (*)())
@@ -907,7 +897,7 @@ const String encodeDisplayRoute(const unsigned short displayID, const unsigned s
     std::vector<unsigned short> routes{displayID, receiverRouteID};
 
     unsigned int watchdogCounter = 0U;
-    while (routes.back() != This::ID.getID())
+    while (routes.back() != This::ID.getNodeID())
     {
         for (Node_RepeaterNode::setPointerToHome();
              Node_RepeaterNode::getPointer() < Node_RepeaterNode::getTotalNumberOfRepeaters();

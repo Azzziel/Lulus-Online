@@ -12,20 +12,23 @@ public:
     struct ID_t
     {
         char signature;
-        uint16_t data;
+        uint32_t location_id;
+        uint16_t node_id;
     };
 
 public:
     const bool loadIDFromEEPROM(const unsigned int saveAddress, const char idSignature);
 
-    const uint16_t getID() const { return ID.data; }
-    const String getIDInHexString() const { return HexConverter::toString(getID(), 4); }
+    const uint32_t getLocationID() const { return ID.location_id; }
+
+    const uint16_t getNodeID() const { return ID.node_id; }
+    const String getNodeIDInHexString() const { return HexConverter::toString(getNodeID(), 4); }
 
     const char getIDSignature() const { return ID.signature; }
 
     // --------------------------------------------------------
     /* 
-     * WARNING!!! DANGEROUS OPERATION
+     * WARNING!!! DANGEROUS IF CONTINUOUSLY CALLED
      * Use only in void setup() and when doing an initial setup
      */
     const ID_t putNewIDToEEPROM(const uint32_t saveAddress, const ID_t id) const { return EEPROM.put<ID_t>(saveAddress, id); }

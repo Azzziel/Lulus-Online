@@ -11,7 +11,8 @@ const bool Node_ID::loadIDFromEEPROM(const unsigned int saveAddress, const char 
     if (idSignature == payload.signature)
     {
         ID.signature = payload.signature;
-        ID.data = payload.data;
+        ID.location_id = payload.location_id;
+        ID.node_id = payload.node_id;
 
         return true;
     }

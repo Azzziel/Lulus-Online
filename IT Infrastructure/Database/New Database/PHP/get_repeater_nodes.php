@@ -19,7 +19,7 @@ $query = "
 SELECT `rptr_id`, 
        `send_rt` 
 FROM   `node_repeaters` 
-WHERE  `lc_id` = $location_id";
+WHERE  `lc_id` = $lc_id";
 
 $result = $mysqli->query($query);
 
