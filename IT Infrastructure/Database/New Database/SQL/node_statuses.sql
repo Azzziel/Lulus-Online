@@ -1,15 +1,14 @@
-DROP TABLE IF EXISTS `onspotmy_node_new_db`.`node_statuses`;
-CREATE TABLE `onspotmy_node_new_db`.`node_statuses` (
+DROP TABLE IF EXISTS `onspotmy_node_db`.`node_statuses`;
+CREATE TABLE `onspotmy_node_db`.`node_statuses` (
   `index` INT UNSIGNED AUTO_INCREMENT NOT NULL,
   `lc_id` INT UNSIGNED NOT NULL,
   `node_id` CHAR(4) NOT NULL,
   `n_stats` BOOLEAN NOT NULL,
   `t_stamp` DATETIME DEFAULT NOW() NOT NULL,
-  PRIMARY KEY (`lc_id`, `node_id`),
-  FOREIGN KEY (`lc_id`, `node_id`) REFERENCES `node_devices` (`lc_id`, `node_id`),
-  UNIQUE `UNIQUE_INDEX` (`index`)
+  PRIMARY KEY (`index`),
+  FOREIGN KEY (`lc_id`, `node_id`) REFERENCES `node_devices` (`lc_id`, `node_id`)
 ) ENGINE = InnoDB;
-INSERT INTO `onspotmy_node_new_db`.`node_statuses` (`lc_id`, `node_id`, `n_stats`, `t_stamp`)
+INSERT INTO `onspotmy_node_db`.`node_statuses` (`lc_id`, `node_id`, `n_stats`, `t_stamp`)
 VALUES
   (1, 'A001', false, '2020-01-01 07:00:00'),
   (1, 'A002', false, '2020-01-01 07:00:00'),

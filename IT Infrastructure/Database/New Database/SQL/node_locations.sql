@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS `onspotmy_node_new_db`.`node_locations`;
-CREATE TABLE `onspotmy_node_new_db`.`node_locations` (
+DROP TABLE IF EXISTS `onspotmy_node_db`.`node_locations`;
+CREATE TABLE `onspotmy_node_db`.`node_locations` (
   `lc_id` INT UNSIGNED AUTO_INCREMENT NOT NULL,
   `lc_name` VARCHAR(255) NOT NULL,
   `lc_lat` DECIMAL(9, 6) NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE `onspotmy_node_new_db`.`node_locations` (
   PRIMARY KEY (`lc_id`),
   UNIQUE `UNIQUE_TOKEN` (`lc_tokn`)
 ) ENGINE = InnoDB;
-INSERT INTO `onspotmy_node_new_db`.`node_locations` (
+INSERT INTO `onspotmy_node_db`.`node_locations` (
     `lc_id`,
     `lc_name`,
     `lc_lat`,

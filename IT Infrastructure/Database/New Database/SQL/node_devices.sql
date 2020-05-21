@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS `onspotmy_node_new_db`.`node_devices`;
-CREATE TABLE `onspotmy_node_new_db`.`node_devices` (
+DROP TABLE IF EXISTS `onspotmy_node_db`.`node_devices`;
+CREATE TABLE `onspotmy_node_db`.`node_devices` (
   `index` INT UNSIGNED AUTO_INCREMENT NOT NULL,
   `lc_id` INT UNSIGNED NOT NULL,
   `node_id` CHAR(4) NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE `onspotmy_node_new_db`.`node_devices` (
   UNIQUE `UNIQUE_INDEX` (`index`),
   UNIQUE `UNIQUE_SPACE_NAME` (`fl_id`, `spc_nm`)
 ) ENGINE = InnoDB;
-INSERT INTO `onspotmy_node_new_db`.`node_devices` (
+INSERT INTO `onspotmy_node_db`.`node_devices` (
     `lc_id`,
     `node_id`,
     `send_rt`,

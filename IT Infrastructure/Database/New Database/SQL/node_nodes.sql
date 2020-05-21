@@ -1,12 +1,12 @@
-DROP TABLE IF EXISTS `onspotmy_node_new_db`.`node_nodes`;
-CREATE TABLE `onspotmy_node_new_db`.`node_nodes` (
+DROP TABLE IF EXISTS `onspotmy_node_db`.`node_nodes`;
+CREATE TABLE `onspotmy_node_db`.`node_nodes` (
   `lc_id` INT UNSIGNED NOT NULL,
   `node_id` CHAR(4) NOT NULL,
   `n_type` ENUM('GTWY', 'RPTR', 'SNSR', 'DISP') NOT NULL,
   PRIMARY KEY (`lc_id`, `node_id`),
   FOREIGN KEY (`lc_id`) REFERENCES `node_locations` (`lc_id`)
 ) ENGINE = InnoDB;
-INSERT INTO `onspotmy_node_new_db`.`node_nodes` (`lc_id`, `node_id`, `n_type`)
+INSERT INTO `onspotmy_node_db`.`node_nodes` (`lc_id`, `node_id`, `n_type`)
 VALUES
   (1, 'AAA1', 'GTWY'),
   (1, 'AA01', 'RPTR'),

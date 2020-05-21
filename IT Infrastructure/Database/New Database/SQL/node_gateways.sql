@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS `onspotmy_node_new_db`.`node_gateways`;
-CREATE TABLE `onspotmy_node_new_db`.`node_gateways` (
+DROP TABLE IF EXISTS `onspotmy_node_db`.`node_gateways`;
+CREATE TABLE `onspotmy_node_db`.`node_gateways` (
   `index` INT UNSIGNED AUTO_INCREMENT NOT NULL,
   `lc_id` INT UNSIGNED NOT NULL,
   `gtwy_id` CHAR(4) NOT NULL,
@@ -9,6 +9,6 @@ CREATE TABLE `onspotmy_node_new_db`.`node_gateways` (
   FOREIGN KEY (`fl_id`) REFERENCES `node_floors` (`fl_id`),
   UNIQUE `UNIQUE_INDEX` (`index`)
 ) ENGINE = InnoDB;
-INSERT INTO `onspotmy_node_new_db`.`node_gateways` (`lc_id`, `gtwy_id`, `fl_id`)
+INSERT INTO `onspotmy_node_db`.`node_gateways` (`lc_id`, `gtwy_id`, `fl_id`)
 VALUES
   (1, 'AAA1', 1);

@@ -1,0 +1,4 @@
+-- # host_uri          = 'dci06.dewaweb.com'
+-- # database_username = 'onspotmy_tim_imba_sk20'
+-- # database_password = 'bersamalulusonline20'
+-- # database_name     = 'onspotmy_node_new_db'

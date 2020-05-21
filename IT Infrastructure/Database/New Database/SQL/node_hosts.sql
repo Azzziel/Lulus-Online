@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS `onspotmy_node_new_db`.`node_hosts`;
-CREATE TABLE `onspotmy_node_new_db`.`node_hosts` (
+DROP TABLE IF EXISTS `onspotmy_node_db`.`node_hosts`;
+CREATE TABLE `onspotmy_node_db`.`node_hosts` (
   `host_id` INT UNSIGNED AUTO_INCREMENT NOT NULL,
   `hostname` VARCHAR(32) NOT NULL,
   `password` VARCHAR(32) NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE `onspotmy_node_new_db`.`node_hosts` (
   FOREIGN KEY (`location`) REFERENCES `node_locations` (`lc_id`),
   UNIQUE `UNIQUE_HOST` (`hostname`)
 ) ENGINE = InnoDB;
-INSERT INTO `onspotmy_node_new_db`.`node_hosts` (
+INSERT INTO `onspotmy_node_db`.`node_hosts` (
     `hostname`,
     `password`,
     `firstname`,
