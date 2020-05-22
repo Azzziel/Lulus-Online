@@ -26,25 +26,63 @@ if (empty($lc_id) || $lc_id <= 0) {
 }
 
 $query = "
-SELECT `n_stats` 
+SELECT `n_stats`, 
+       `t_stamp` 
 FROM   `node_statuses` 
-WHERE  `node_id` = '$node_id' 
-       AND `lc_id` = $lc_id 
+WHERE  `node_id` = 'A001' 
+       AND `lc_id` = 1 
 ORDER  BY `t_stamp` DESC 
 LIMIT  1";
 
 $result = $mysqli->query($query);
-$previous_n_stats = $result->fetch_row()[0];
+$row = $result->fetch_row();
+
+$previous_n_stats = $row[0];
+$previous_t_stamp = $row[1];
+
+$current_unix_stamp = time();
+$current_time_stamp = date("Y-m-d H:i:s", $current_unix_stamp);
 
 if ($previous_n_stats == $n_stats) {
     echo 'SUCCESS';
-    exit();
-}
-
-$query = "INSERT INTO `node_statuses` (`lc_id`, `node_id`, `n_stats`) VALUES ($lc_id, '$node_id', '$n_stats')";
-
-if ($result = $mysqli->query($query)) {
-    echo 'SUCCESS';
 } else {
-    echo 'FAILED';
+    if ($n_stats == 0) {
+        $previous_unix_stamp = strtotime($previous_t_stamp);
+        $s_spent = $current_unix_stamp - $previous_unix_stamp;
+
+        $query = "
+        INSERT INTO `node_summaries` 
+                    (`lc_id`, 
+                     `node_id`, 
+                     `s_spent`, 
+                     `t_in`, 
+                     `t_out`) 
+        VALUES      ($lc_id, 
+                     '$node_id', 
+                     $s_spent, 
+                     '$previous_t_stamp', 
+                     '$current_time_stamp')";
+
+        if (!($result = $mysqli->query($query))) {
+            echo 'FAILED';
+            exit();
+        }
+    }
+
+    $query = "
+    INSERT INTO `node_statuses` 
+                (`lc_id`, 
+                 `node_id`, 
+                 `n_stats`, 
+                 `t_stamp`) 
+    VALUES      ($lc_id, 
+                 '$node_id', 
+                 '$n_stats', 
+                 '$current_time_stamp')";
+
+    if ($result = $mysqli->query($query)) {
+        echo 'SUCCESS';
+    } else {
+        echo 'FAILED';
+    }
 }

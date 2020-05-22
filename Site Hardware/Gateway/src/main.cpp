@@ -224,6 +224,9 @@ void setup()
     post.addRequestData("gtwy_id", This::ID.getNodeIDInHexString().c_str());
     Query::loadStringPayload("get_gateway_status.php", Query::getGatewayStatus);
 
+    Serial.print(F("[M] Location ID: "));
+    Serial.print(This::ID.getLocationID());
+    Serial.println();
     Serial.print(F("[M] Gateway ID: "));
     Serial.print(This::ID.getNodeIDInHexString());
     Serial.println();
@@ -571,6 +574,7 @@ void loop()
         {
             if (Query::queue.front().type == Node_SensorNode::Keys::CAR)
             {
+                post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
                 post.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id).c_str());
                 post.addRequestData("n_stats", String(Query::queue.front().value).c_str());
 
@@ -606,6 +610,7 @@ void loop()
             }
             else if (Query::queue.front().type == Node_SensorNode::Keys::BAT)
             {
+                post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
                 post.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id).c_str());
                 post.addRequestData("battery", String(Query::queue.front().value).c_str());
 
@@ -635,6 +640,7 @@ void loop()
             }
             else if (Query::queue.front().type == Node_SensorNode::Keys::RST)
             {
+                post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
                 post.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id).c_str());
 
                 int httpCode;

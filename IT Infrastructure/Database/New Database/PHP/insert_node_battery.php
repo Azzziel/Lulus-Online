@@ -17,7 +17,7 @@ if (empty($node_id)) {
     exit();
 }
 
-if ($battery != 1 && $battery != 2 && $battery != 3 && $battery != 4) {
+if (empty($battery) || ($battery != 1 && $battery != 2 && $battery != 3 && $battery != 4)) {
     exit();
 }
 
