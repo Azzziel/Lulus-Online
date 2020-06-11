@@ -21,9 +21,9 @@ INSERT INTO `onspotmy_node_db`.`node_locations` (
 VALUES
   (
     1,
-    'Gedung Parkir Jalan Syahdan',
-    -6.200918,
-    106.783644,
+    'BINUS Syahdan',
+    -6.200200,
+    106.785400,
     '73156307c561ccc9f5926ebbdd0472e0',
     3
   );

@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS `onspotmy_node_db`.`node_floors`;
 CREATE TABLE `onspotmy_node_db`.`node_floors` (
   `fl_id` INT UNSIGNED AUTO_INCREMENT NOT NULL,
   `lc_id` INT UNSIGNED NOT NULL,
-  `fl_name` VARCHAR(4) NOT NULL,
+  `fl_name` VARCHAR(32) NOT NULL,
   `fl_spc` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`lc_id`, `fl_name`),
   FOREIGN KEY (`lc_id`) REFERENCES `node_locations` (`lc_id`),

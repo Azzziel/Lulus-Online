@@ -12,7 +12,6 @@
 -- 5. - node summaries
 --
 -- DROP Order
-DROP TRIGGER IF EXISTS `onspotmy_node_db`.`insert_summary`;
 DROP TABLE IF EXISTS `onspotmy_node_db`.`node_summaries`;
 DROP TABLE IF EXISTS `onspotmy_node_db`.`node_resets`;
 DROP TABLE IF EXISTS `onspotmy_node_db`.`node_batteries`;
