@@ -10,5 +10,5 @@ CREATE TABLE `onspotmy_node_db`.`node_floors` (
 ) ENGINE = InnoDB;
 INSERT INTO `onspotmy_node_db`.`node_floors` (`fl_id`, `lc_id`, `fl_name`, `fl_spc`)
 VALUES
-  (1, 1, 'L1', 16),
-  (2, 1, 'L2', 16);
+  (1, 1, 'VIP', 20),
+  (2, 1, 'General', 40);
