@@ -104,7 +104,7 @@ class _MyGoogleMapState extends State<MyGoogleMap> {
     var unlistenedProvider =
         Provider.of<NodeLocationModel>(context, listen: false);
 
-    if (provider.permissionLocationStatus.isGranted) {
+    if (provider.permissionLocationAlwaysStatus.isGranted) {
       return Stack(
         children: <Widget>[
           GoogleMap(
@@ -153,25 +153,30 @@ class _MyGoogleMapState extends State<MyGoogleMap> {
         ],
       );
     } else {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Text(
-            'Please permit location use',
-            style: TextStyle(
-              fontFamily: 'Source Sans Pro',
-              fontWeight: FontWeight.w700,
-              fontSize: 18.0,
-              color: Color(ColorStandard.text),
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: 40.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              'Please allow the app to access device location all the time',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Source Sans Pro',
+                fontWeight: FontWeight.w700,
+                fontSize: 18.0,
+                color: Color(ColorStandard.text),
+              ),
             ),
-          ),
-          RaisedButton(
-            onPressed: provider.requestLocationPermission,
-            color: Color(ColorStandard.text),
-            textColor: Colors.white,
-            child: Text('ALLOW'),
-          ),
-        ],
+            SizedBox(height: 15.0),
+            RaisedButton(
+              onPressed: provider.requestLocationPermission,
+              color: Color(ColorStandard.text),
+              textColor: Colors.white,
+              child: Text('ALLOW'),
+            ),
+          ],
+        ),
       );
     }
   }

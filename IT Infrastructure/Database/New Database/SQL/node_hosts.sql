@@ -21,7 +21,7 @@ INSERT INTO `onspotmy_node_db`.`node_hosts` (
   )
 VALUES
   (
-    'Azzziel',
+    'azzziel',
     'lulustajir',
     'Azriel',
     'Hutagalung',

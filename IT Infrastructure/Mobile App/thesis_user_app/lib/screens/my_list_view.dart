@@ -24,6 +24,7 @@ class MyListView extends StatelessWidget {
     var unlistenedProvider =
         Provider.of<NodeLocationModel>(context, listen: false);
 
+    // TODO: Handle the situation where there's no internet connection, maybe by adding a retry button
     if (provider.nodeLocations.isEmpty) {
       return Expanded(
         child: Center(child: CircularProgressIndicator()),

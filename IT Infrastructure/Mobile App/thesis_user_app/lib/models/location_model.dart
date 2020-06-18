@@ -41,21 +41,35 @@ class NodeLocationModel extends ChangeNotifier {
 
   Timer _timer;
 
-  PermissionStatus _permissionLocationStatus = PermissionStatus.undetermined;
-  PermissionStatus get permissionLocationStatus => _permissionLocationStatus;
+//  PermissionStatus _permissionLocationStatus = PermissionStatus.undetermined;
+//  PermissionStatus get permissionLocationStatus => _permissionLocationStatus;
+
+  PermissionStatus _permissionLocationAlwaysStatus =
+      PermissionStatus.undetermined;
+  PermissionStatus get permissionLocationAlwaysStatus =>
+      _permissionLocationAlwaysStatus;
+
+//  PermissionStatus _permissionLocationWhenInUseStatus =
+//      PermissionStatus.undetermined;
+//  PermissionStatus get permissionLocationWhenInUseStatus =>
+//      _permissionLocationWhenInUseStatus;
 
   Future<void> _checkLocationPermission() async {
-    _permissionLocationStatus = await Permission.location.status;
-    notifyListeners();
+//    _permissionLocationStatus = await Permission.location.status;
+    _permissionLocationAlwaysStatus = await Permission.locationAlways.status;
+//    _permissionLocationWhenInUseStatus =
+//        await Permission.locationWhenInUse.status;
+//    notifyListeners();
 
-    if (_permissionLocationStatus != PermissionStatus.granted) {
+    if (_permissionLocationAlwaysStatus != PermissionStatus.granted) {
       requestLocationPermission();
     }
   }
 
   Future<void> requestLocationPermission() async {
     try {
-      _permissionLocationStatus = await Permission.location.request();
+      _permissionLocationAlwaysStatus =
+          await Permission.locationAlways.request();
       notifyListeners();
     } catch (e) {
       print('[] Exception details: $e');
@@ -139,7 +153,8 @@ class NodeLocationModel extends ChangeNotifier {
     if (!_isRunningLoadPosition) {
       _isRunningLoadPosition = true;
 
-      if (_permissionLocationStatus.isGranted) {
+      // TODO: Fix the bug caused by choosing when-in-use-only permission
+      if (_permissionLocationAlwaysStatus.isGranted) {
         _position = await _geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.bestForNavigation,
         );

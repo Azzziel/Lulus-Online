@@ -9,6 +9,7 @@
 --    - node devices
 -- 4. - node statuses
 --    - node batteries
+--    - node resets
 -- 5. - node summaries
 --
 -- DROP Order

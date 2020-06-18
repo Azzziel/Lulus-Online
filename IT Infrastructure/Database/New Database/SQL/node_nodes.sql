@@ -12,6 +12,7 @@ VALUES
   (1, 'AA01', 'RPTR'),
   (1, 'AA02', 'RPTR'),
   (1, 'AA03', 'RPTR'),
+  (1, 'AA04', 'RPTR'),
   (1, 'AB01', 'DISP'),
   (1, 'AB02', 'DISP'),
   (1, 'A001', 'SNSR'),

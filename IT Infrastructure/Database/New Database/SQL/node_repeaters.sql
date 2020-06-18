@@ -14,5 +14,6 @@ CREATE TABLE `onspotmy_node_db`.`node_repeaters` (
 INSERT INTO `onspotmy_node_db`.`node_repeaters` (`lc_id`, `rptr_id`, `send_rt`, `fl_id`)
 VALUES
   (1, 'AA01', 'AAA1', 1),
-  (1, 'AA02', 'AA01', 2),
-  (1, 'AA03', 'AA02', 2);
+  (1, 'AA02', 'AAA1', 2),
+  (1, 'AA03', 'AA02', 2),
+  (1, 'AA04', 'AA03', 2);

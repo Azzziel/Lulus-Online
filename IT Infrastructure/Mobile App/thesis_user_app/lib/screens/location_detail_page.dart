@@ -11,6 +11,8 @@ import '../models/location_model.dart';
 import '../models/location_detail_model.dart';
 import 'detail_list_tile.dart';
 
+// TODO: Make this page receive live data
+
 class LocationDetailPage extends StatefulWidget {
   LocationDetailPage(this.locationId, this.locationName, {Key key})
       : super(key: key);

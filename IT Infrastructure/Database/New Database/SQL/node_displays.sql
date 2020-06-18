@@ -24,13 +24,13 @@ VALUES
     1,
     'AB01',
     'AA02',
-    true,
+    false,
     1
   ),
   (
     1,
     'AB02',
     'AA02',
-    true,
+    false,
     2
   );
