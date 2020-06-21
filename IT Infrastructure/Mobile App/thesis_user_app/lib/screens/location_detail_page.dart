@@ -25,46 +25,52 @@ class LocationDetailPage extends StatefulWidget {
 }
 
 class _LocationDetailPageState extends State<LocationDetailPage> {
-  PostHandler _postHandler = PostHandler(SERVER_BASE_URL, SERVER_AUTH_KEY);
+  GetHandler _httpHandler = GetHandler(SERVER_URL, SERVER_API_KEY);
 
   LocationDetail _locationDetail;
   List<LocationDetailFloor> _floorDetails = [];
 
   Future<void> _loadLocationDetail() async {
-    _postHandler.addBody({'location_id': widget.locationId.toString()});
-    Response response =
-        await _postHandler.getResponse('get_location_detail.php');
+    _httpHandler.addParameters('lc_id', widget.locationId.toString());
+    Response response = await _httpHandler.getResponse('detail');
 
-    if (response.statusCode - response.statusCode % 100 == 200) {
-      Map<String, dynamic> jsonData = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      dynamic jsonData = jsonDecode(response.body);
 
-      setState(() {
-        _locationDetail = LocationDetail(
-          int.parse(jsonData['occupied_space']),
-          int.parse(jsonData['total_space']),
-        );
-      });
+      if (jsonData['status'] == 200) {
+        dynamic jsonValues = jsonData['values'];
+
+        setState(() {
+          _locationDetail = LocationDetail(
+            jsonValues['occupied_space'] as int,
+            jsonValues['total_space'] as int,
+          );
+        });
+      }
     }
   }
 
   Future<void> _loadLocationDetailFloor() async {
-    _postHandler.addBody({'location_id': widget.locationId.toString()});
-    Response response =
-        await _postHandler.getResponse('get_location_detail_floor.php');
+    _httpHandler.addParameters('lc_id', widget.locationId.toString());
+    Response response = await _httpHandler.getResponse('floor');
 
     if (response.statusCode == 200) {
-      List<dynamic> jsonData = jsonDecode(response.body);
+      dynamic jsonData = jsonDecode(response.body);
 
-      setState(() {
-        for (var jsonRow in jsonData) {
-          _floorDetails.add(LocationDetailFloor(
-            int.parse(jsonRow['fl_id']),
-            jsonRow['fl_name'],
-            int.parse(jsonRow['floor_occupancy']),
-            int.parse(jsonRow['floor_space']),
-          ));
-        }
-      });
+      if (jsonData['status'] == 200) {
+        dynamic jsonValues = jsonData['values'];
+
+        setState(() {
+          for (int i = 0; i < jsonValues.length; ++i) {
+            _floorDetails.add(LocationDetailFloor(
+              jsonValues[i]['fl_id'] as int,
+              jsonValues[i]['fl_name'],
+              jsonValues[i]['floor_occupancy'] as int,
+              jsonValues[i]['floor_space'] as int,
+            ));
+          }
+        });
+      }
     }
   }
 
@@ -166,147 +172,160 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     NodeLocation location =
         unlistenedProvider.nodeLocations[nodeLocationsIndex];
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(ColorStandard.text),
-        title: Text(
-          widget.locationName,
-          style: TextStyle(
-            fontFamily: 'Source Sans Pro',
+    return WillPopScope(
+      onWillPop: () async {
+        unlistenedProvider.startTimer();
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.of(context).pop();
+              unlistenedProvider.startTimer();
+            },
+          ),
+          backgroundColor: Color(ColorStandard.text),
+          title: Text(
+            widget.locationName,
+            style: TextStyle(
+              fontFamily: 'Source Sans Pro',
+            ),
           ),
         ),
-      ),
-      body: _basicInitializationDone
-          ? ListView(
-              children: <Widget>[
-                DetailListTile(
-                  title: 'Overall',
-                  snippets: <Widget>[
-                    Padding(
-                      padding: EdgeInsets.only(top: 5.0),
-                      child: Text(
-                        '${_locationDetail?.occupiedSpace ?? 0}/${_locationDetail?.totalSpace ?? 0} occupied',
-                        style: detailTextStyle.copyWith(fontSize: 20.0),
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: 5.0),
-                      child: Text(
-                        '${_locationDetail?.freeSpace ?? 0} available',
-                        style: detailTextStyle.copyWith(fontSize: 20.0),
-                      ),
-                    ),
-                  ],
-                ),
-                _floorDetails.isEmpty
-                    ? Container()
-                    : DetailListTile(
-                        title: 'By floor',
-                        snippets: _buildFloorSnippets(),
-                      ),
-                SizedBox(height: 20.0),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Divider(thickness: 1.0),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(
-                    left: 20.0,
-                    right: 20.0,
-                    top: 20.0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: <Widget>[
-                      FlatButton(
-                        onPressed: () async {
-                          final String baseUrl =
-                              'https://www.google.com/maps/dir/';
-
-                          String url;
-                          url = baseUrl;
-                          url += '?api=1';
-
-                          url += '&destination=';
-                          url += location.latitude.toString();
-                          url += ',';
-                          url += location.longitude.toString();
-
-                          url += '&destination_place_id=';
-                          url += location.googlePlaceId;
-
-                          url += '&travelmode=driving';
-
-                          if (await canLaunch(url)) {
-                            await launch(url);
-                          } else {
-                            print('[] Could not launch: $baseUrl');
-                          }
-                        },
-                        child: Column(
-                          children: <Widget>[
-                            Icon(
-                              Icons.directions,
-                              size: 50.0,
-                              color: Color(ColorStandard.text),
-                            ),
-                            Text(
-                              'Directions',
-                              style: detailTextStyle.copyWith(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            )
-                          ],
+        body: _basicInitializationDone
+            ? ListView(
+                children: <Widget>[
+                  DetailListTile(
+                    title: 'Overall',
+                    snippets: <Widget>[
+                      Padding(
+                        padding: EdgeInsets.only(top: 5.0),
+                        child: Text(
+                          '${_locationDetail?.occupiedSpace ?? 0}/${_locationDetail?.totalSpace ?? 0} occupied',
+                          style: detailTextStyle.copyWith(fontSize: 20.0),
                         ),
                       ),
-                      FlatButton(
-                        onPressed: () async {
-                          final String baseUrl =
-                              'https://www.google.com/maps/search/';
-
-                          String url;
-                          url = baseUrl;
-                          url += '?api=1';
-
-                          url += '&query=';
-                          url += location.latitude.toString();
-                          url += ',';
-                          url += location.longitude.toString();
-
-                          url += '&query_place_id=';
-                          url += location.googlePlaceId;
-
-                          if (await canLaunch(url)) {
-                            await launch(url);
-                          } else {
-                            print('[] Could not launch: $baseUrl');
-                          }
-                        },
-                        child: Column(
-                          children: <Widget>[
-                            Icon(
-                              Icons.map,
-                              size: 50.0,
-                              color: Color(ColorStandard.text),
-                            ),
-                            Text(
-                              'Map',
-                              style: detailTextStyle.copyWith(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            )
-                          ],
+                      Padding(
+                        padding: EdgeInsets.only(top: 5.0),
+                        child: Text(
+                          '${_locationDetail?.freeSpace ?? 0} available',
+                          style: detailTextStyle.copyWith(fontSize: 20.0),
                         ),
                       ),
                     ],
                   ),
-                ),
-                SizedBox(height: 20.0),
-              ],
-            )
-          : Center(child: CircularProgressIndicator()),
+                  _floorDetails.isEmpty
+                      ? Container()
+                      : DetailListTile(
+                          title: 'By floor',
+                          snippets: _buildFloorSnippets(),
+                        ),
+                  SizedBox(height: 20.0),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.0),
+                    child: Divider(thickness: 1.0),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: 20.0,
+                      right: 20.0,
+                      top: 20.0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        FlatButton(
+                          onPressed: () async {
+                            final String baseUrl =
+                                'https://www.google.com/maps/dir/';
+
+                            String url;
+                            url = baseUrl;
+                            url += '?api=1';
+
+                            url += '&destination=';
+                            url += location.latitude.toString();
+                            url += ',';
+                            url += location.longitude.toString();
+
+                            url += '&destination_place_id=';
+                            url += location.googlePlaceId;
+
+                            url += '&travelmode=driving';
+
+                            if (await canLaunch(url)) {
+                              await launch(url);
+                            } else {
+                              print('[] Could not launch: $baseUrl');
+                            }
+                          },
+                          child: Column(
+                            children: <Widget>[
+                              Icon(
+                                Icons.directions,
+                                size: 50.0,
+                                color: Color(ColorStandard.text),
+                              ),
+                              Text(
+                                'Directions',
+                                style: detailTextStyle.copyWith(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                        FlatButton(
+                          onPressed: () async {
+                            final String baseUrl =
+                                'https://www.google.com/maps/search/';
+
+                            String url;
+                            url = baseUrl;
+                            url += '?api=1';
+
+                            url += '&query=';
+                            url += location.latitude.toString();
+                            url += ',';
+                            url += location.longitude.toString();
+
+                            url += '&query_place_id=';
+                            url += location.googlePlaceId;
+
+                            if (await canLaunch(url)) {
+                              await launch(url);
+                            } else {
+                              print('[] Could not launch: $baseUrl');
+                            }
+                          },
+                          child: Column(
+                            children: <Widget>[
+                              Icon(
+                                Icons.map,
+                                size: 50.0,
+                                color: Color(ColorStandard.text),
+                              ),
+                              Text(
+                                'Map',
+                                style: detailTextStyle.copyWith(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 20.0),
+                ],
+              )
+            : Center(child: CircularProgressIndicator()),
+      ),
     );
   }
 }

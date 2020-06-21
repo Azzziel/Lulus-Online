@@ -48,6 +48,7 @@ class MyListView extends StatelessWidget {
                     color: Color(ColorStandard.text),
                   ),
                   onPressed: () {
+                    unlistenedProvider.cancelTimer();
                     Navigator.push(
                       context,
                       MaterialPageRoute(

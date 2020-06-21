@@ -7,8 +7,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'post_handler.dart';
 
-const SERVER_BASE_URL = 'http://www.onspot.my.id/api/mobile_app/';
-const SERVER_AUTH_KEY = '98d11adf61a1fc9ab76ee375d0600170';
+const SERVER_URL = 'http://onspot.my.id/api/maps/';
+const SERVER_API_KEY = '5cb4bf3e42ff76ca9186850b9017bdc8';
 
 class NodeLocation {
   NodeLocation(this.id, this.name, this.latitude, this.longitude,
@@ -29,7 +29,7 @@ class NodeLocationModel extends ChangeNotifier {
     _initialize();
   }
 
-  PostHandler _postHandler = PostHandler(SERVER_BASE_URL, SERVER_AUTH_KEY);
+  GetHandler _httpHandler = GetHandler(SERVER_URL, SERVER_API_KEY);
   Geolocator _geolocator = Geolocator();
 
   List<NodeLocation> _nodeLocations = [];
@@ -40,6 +40,19 @@ class NodeLocationModel extends ChangeNotifier {
   Position get position => _position; // No setter
 
   Timer _timer;
+  Duration _timerDuration = Duration(milliseconds: 200);
+  void _timerCallback(Timer timer) {
+    _loadFreeSpaces();
+    _loadPositionAndDistance();
+  }
+
+  void startTimer() {
+    _timer = Timer.periodic(_timerDuration, _timerCallback);
+  }
+
+  void cancelTimer() {
+    _timer?.cancel(); // Notice the null-aware operator
+  }
 
 //  PermissionStatus _permissionLocationStatus = PermissionStatus.undetermined;
 //  PermissionStatus get permissionLocationStatus => _permissionLocationStatus;
@@ -111,38 +124,39 @@ class NodeLocationModel extends ChangeNotifier {
     _checkLocationPermission();
     await _loadNodeLocations();
 
-    _timer = Timer.periodic(Duration(milliseconds: 200), (timer) {
-      _loadFreeSpaces();
-      _loadPositionAndDistance();
-    });
+    startTimer();
   }
 
   @override
   void dispose() {
-    _timer?.cancel(); // Note the null-aware member access operator [?.]
+    cancelTimer();
     super.dispose();
   }
 
   Future<void> _loadNodeLocations() async {
-    Response response = await _postHandler.getResponse('get_locations.php');
+    Response response = await _httpHandler.getResponse('location');
 
     if (response.statusCode == 200) {
-      List<dynamic> jsonData = jsonDecode(response.body);
+      dynamic jsonData = jsonDecode(response.body);
 
-      jsonData.forEach((element) {
-        nodeLocations.add(
-          NodeLocation(
-            int.parse(element['lc_id']),
-            element['lc_name'],
-            double.parse(element['lc_lat']),
-            double.parse(element['lc_long']),
-            element['google_place_id'],
-            int.parse(element['free_space']),
-          ),
-        );
-      });
+      if (jsonData['status'] == 200) {
+        dynamic jsonValues = jsonData['values'];
 
-      notifyListeners();
+        for (int i = 0; i < jsonValues.length; ++i) {
+          nodeLocations.add(
+            NodeLocation(
+              jsonValues[i]['lc_id'],
+              jsonValues[i]['lc_name'],
+              jsonValues[i]['lc_lat'],
+              jsonValues[i]['lc_long'],
+              jsonValues[i]['google_place_id'],
+              jsonValues[i]['free_space'],
+            ),
+          );
+        }
+
+        notifyListeners();
+      }
     }
   }
 
@@ -172,19 +186,24 @@ class NodeLocationModel extends ChangeNotifier {
     if (!_isRunningLoadFreeSpaces) {
       _isRunningLoadFreeSpaces = true;
 
-      Response response = await _postHandler.getResponse('get_free_spaces.php');
+      Response response = await _httpHandler.getResponse('freespace');
 
       if (response.statusCode == 200) {
         if (_previousResponseBody == response.body) {
-          List<dynamic> jsonData = jsonDecode(response.body);
+          dynamic jsonData = jsonDecode(response.body);
 
-          for (var jsonRow in jsonData) {
-            int index = nodeLocations.indexWhere(
-                    (element) => element.id == int.parse(jsonRow['lc_id']));
-            nodeLocations[index].space = int.parse(jsonRow['free_space']);
+          if (jsonData['status'] == 200) {
+            dynamic jsonValues = jsonData['values'];
+
+            for (var value in jsonValues) {
+              int index = nodeLocations
+                  .indexWhere((element) => element.id == value['lc_id']);
+              nodeLocations[index].space = value['free_space'];
+            }
+
+            notifyListeners();
           }
 
-          notifyListeners();
           _previousResponseBody = response.body;
         }
       }
