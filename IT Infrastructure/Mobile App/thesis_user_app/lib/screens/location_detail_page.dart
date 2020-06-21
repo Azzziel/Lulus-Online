@@ -36,7 +36,7 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
         await _postHandler.getResponse('get_location_detail.php');
 
     if (response.statusCode - response.statusCode % 100 == 200) {
-      dynamic jsonData = jsonDecode(response.body);
+      Map<String, dynamic> jsonData = jsonDecode(response.body);
 
       setState(() {
         _locationDetail = LocationDetail(
@@ -53,16 +53,15 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
         await _postHandler.getResponse('get_location_detail_floor.php');
 
     if (response.statusCode == 200) {
-      dynamic jsonData = jsonDecode(response.body);
+      List<dynamic> jsonData = jsonDecode(response.body);
 
       setState(() {
-        // C-style [for] should be used for an unknown data type at compile-time
-        for (int i = 0; i < jsonData.length; ++i) {
+        for (var jsonRow in jsonData) {
           _floorDetails.add(LocationDetailFloor(
-            int.parse(jsonData[i]['fl_id']),
-            jsonData[i]['fl_name'],
-            int.parse(jsonData[i]['floor_occupancy']),
-            int.parse(jsonData[i]['floor_space']),
+            int.parse(jsonRow['fl_id']),
+            jsonRow['fl_name'],
+            int.parse(jsonRow['floor_occupancy']),
+            int.parse(jsonRow['floor_space']),
           ));
         }
       });

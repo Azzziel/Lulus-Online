@@ -80,11 +80,11 @@ class NodeLocationModel extends ChangeNotifier {
     int closestId;
 
     double smallest = double.maxFinite;
-    for (var value in nodeLocations) {
-      if (value.distance != null) {
-        if (value.distance < smallest) {
-          smallest = value.distance;
-          closestId = value.id;
+    for (var nodeLocation in nodeLocations) {
+      if (nodeLocation.distance != null) {
+        if (nodeLocation.distance < smallest) {
+          smallest = nodeLocation.distance;
+          closestId = nodeLocation.id;
         }
       } else {
         return null;
@@ -127,21 +127,20 @@ class NodeLocationModel extends ChangeNotifier {
     Response response = await _postHandler.getResponse('get_locations.php');
 
     if (response.statusCode == 200) {
-      dynamic jsonData = jsonDecode(response.body);
+      List<dynamic> jsonData = jsonDecode(response.body);
 
-      // C-style [for] should be used for an unknown data type at compile-time
-      for (int i = 0; i < jsonData.length; ++i) {
+      jsonData.forEach((element) {
         nodeLocations.add(
           NodeLocation(
-            int.parse(jsonData[i]['lc_id']),
-            jsonData[i]['lc_name'],
-            double.parse(jsonData[i]['lc_lat']),
-            double.parse(jsonData[i]['lc_long']),
-            jsonData[i]['google_place_id'],
-            int.parse(jsonData[i]['free_space']),
+            int.parse(element['lc_id']),
+            element['lc_name'],
+            double.parse(element['lc_lat']),
+            double.parse(element['lc_long']),
+            element['google_place_id'],
+            int.parse(element['free_space']),
           ),
         );
-      }
+      });
 
       notifyListeners();
     }
@@ -177,13 +176,12 @@ class NodeLocationModel extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         if (_previousResponseBody == response.body) {
-          dynamic jsonData = jsonDecode(response.body);
+          List<dynamic> jsonData = jsonDecode(response.body);
 
-          // C-style [for] should be used for an unknown data type at compile-time
-          for (int i = 0; i < jsonData.length; ++i) {
+          for (var jsonRow in jsonData) {
             int index = nodeLocations.indexWhere(
-                (element) => element.id == int.parse(jsonData[i]['lc_id']));
-            nodeLocations[index].space = int.parse(jsonData[i]['free_space']);
+                    (element) => element.id == int.parse(jsonRow['lc_id']));
+            nodeLocations[index].space = int.parse(jsonRow['free_space']);
           }
 
           notifyListeners();
