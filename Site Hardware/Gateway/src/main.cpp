@@ -15,7 +15,7 @@
 #include <Node_HC12.h>    // https://github.com/ivan0kurnia/Node_HC12
 #include <HexConverter.h> // https://github.com/ivan0kurnia/HexConverter
 
-#include <POSTHandler.h>
+#include <HTTPHandler.h>
 #include <PayloadHandler.h>
 #include <Divider.h>
 #include <Node_DisplayNode.h>
@@ -45,13 +45,12 @@ namespace Query
 {
     StaticJsonDocument<5120U> document;
 
-    void loadStringPayload(const char *, void (*)(const String &, void (*)()), void (*)() = nullptr);
-    void getSensorCount(const String &, void (*)());
-    void getGatewayStatus(const String &, void (*)());
+    void loadStringPayloadViaGET(const char *, void (*)());
 
-    void loadJsonPayload(const String &, void (*)());
-    void loadDisplayNodes();
+    void loadGatewayStatus();
     void loadRepeaterNodes();
+    void loadDisplayNodes();
+    void loadSensorCount();
     void loadSensorNodes();
 
     struct Queue
@@ -186,7 +185,7 @@ void printProcessTime(const char *const, void (*)());
 Divider queryDivision;
 
 HTTPClient client;
-POSTHandler post(&client, SERVER_URL, SERVER_KEY);
+HTTPHandler httpHandler(&client, SERVER_URL, SERVER_KEY);
 
 void setup()
 {
@@ -220,9 +219,9 @@ void setup()
     while (WiFi.status() != WL_CONNECTED)
         delay(0U);
 
-    post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
-    post.addRequestData("gtwy_id", This::ID.getNodeIDInHexString().c_str());
-    Query::loadStringPayload("get_gateway_status.php", Query::getGatewayStatus);
+    httpHandler.addRequestData("lc_id", String(This::ID.getLocationID()));
+    httpHandler.addRequestData("gtwy_id", This::ID.getNodeIDInHexString());
+    Query::loadStringPayloadViaGET("status", Query::loadGatewayStatus);
 
     Serial.print(F("[M] Location ID: "));
     Serial.print(This::ID.getLocationID());
@@ -234,23 +233,25 @@ void setup()
     const unsigned long queryStartMillis = millis();
 
     // Query ------------------------------------------------------------------------------------------
-    post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
-    Query::loadStringPayload("get_repeater_nodes.php", Query::loadJsonPayload, Query::loadRepeaterNodes);
+    const String locationIDInString = String(This::ID.getLocationID());
 
-    post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
-    Query::loadStringPayload("get_display_nodes.php", Query::loadJsonPayload, Query::loadDisplayNodes);
+    httpHandler.addRequestData("lc_id", locationIDInString);
+    Query::loadStringPayloadViaGET("repeater", Query::loadRepeaterNodes);
 
-    post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
-    Query::loadStringPayload("count_sensor_nodes.php", Query::getSensorCount);
+    httpHandler.addRequestData("lc_id", locationIDInString);
+    Query::loadStringPayloadViaGET("display", Query::loadDisplayNodes);
+
+    httpHandler.addRequestData("lc_id", locationIDInString);
+    Query::loadStringPayloadViaGET("sensorcount", Query::loadSensorCount);
 
     Node_SensorNode::setPointerToHome();
     while (QueryByParts::pointer < queryDivision.getArraySize())
     {
-        post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
-        post.addRequestData("query_index", String(QueryByParts::index).c_str());
-        post.addRequestData("query_limit", String(QueryByParts::LIMIT).c_str());
+        httpHandler.addRequestData("lc_id", locationIDInString);
+        httpHandler.addRequestData("query_index", String(QueryByParts::index));
+        httpHandler.addRequestData("query_limit", String(QueryByParts::LIMIT));
 
-        Query::loadStringPayload("get_sensor_nodes.php", Query::loadJsonPayload, Query::loadSensorNodes);
+        Query::loadStringPayloadViaGET("sensor", Query::loadSensorNodes);
 
         QueryByParts::index += queryDivision[QueryByParts::pointer];
         ++QueryByParts::pointer;
@@ -484,6 +485,7 @@ void loop()
                                     {
                                         setDisplayValue(Transmitter::queue.front().id, Transmitter::queue.front().value);
                                         Transmitter::queue.pop_front();
+                                        Transmitter::queue.shrink_to_fit();
                                     }
                                 }
                             }
@@ -574,9 +576,9 @@ void loop()
         {
             if (Query::queue.front().type == Node_SensorNode::Keys::CAR)
             {
-                post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
-                post.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id).c_str());
-                post.addRequestData("n_stats", String(Query::queue.front().value).c_str());
+                httpHandler.addRequestData("lc_id", String(This::ID.getLocationID()));
+                httpHandler.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id));
+                httpHandler.addRequestData("n_stats", String(Query::queue.front().value));
 
                 Serial.print(F("[M] Updating "));
                 Serial.print(HexConverter::toString(Query::queue.front().node_id));
@@ -585,21 +587,33 @@ void loop()
                 Serial.println();
 
                 int httpCode;
-                const String payload = post.getStringPayload("insert_node_status.php", &httpCode);
+                const String payload = httpHandler.getStringPayloadViaPOST("park", &httpCode);
 
                 if (httpCode == t_http_codes::HTTP_CODE_OK)
                 {
-                    if (payload == F("SUCCESS"))
-                    {
-                        iterateSensorNodes([]() {
-                            if (sensorNodes[Node_SensorNode::getPointer()] == Query::queue.front().node_id)
-                            {
-                                sensorNodes[Node_SensorNode::getPointer()].setNodeStatus(Query::queue.front().value);
-                                return;
-                            }
-                        });
+                    StaticJsonDocument<64> doc;
+                    deserializeJson(doc, payload);
 
-                        Query::queue.pop_front();
+                    if (doc["status"].as<int>() == t_http_codes::HTTP_CODE_OK)
+                    {
+                        if (doc["values"].as<String>() == F("SUCCESS"))
+                        {
+                            iterateSensorNodes([]() {
+                                if (sensorNodes[Node_SensorNode::getPointer()] == Query::queue.front().node_id)
+                                {
+                                    sensorNodes[Node_SensorNode::getPointer()].setNodeStatus(Query::queue.front().value);
+                                    return;
+                                }
+                            });
+
+                            Query::queue.pop_front();
+                            Query::queue.shrink_to_fit();
+                        }
+                    }
+                    else
+                    {
+                        Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
+                        break;
                     }
                 }
                 else
@@ -610,26 +624,38 @@ void loop()
             }
             else if (Query::queue.front().type == Node_SensorNode::Keys::BAT)
             {
-                post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
-                post.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id).c_str());
-                post.addRequestData("battery", String(Query::queue.front().value).c_str());
+                httpHandler.addRequestData("lc_id", String(This::ID.getLocationID()));
+                httpHandler.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id));
+                httpHandler.addRequestData("battery", String(Query::queue.front().value));
 
                 int httpCode;
-                const String payload = post.getStringPayload("insert_node_battery.php", &httpCode);
+                const String payload = httpHandler.getStringPayloadViaPOST("battery", &httpCode);
 
                 if (httpCode == t_http_codes::HTTP_CODE_OK)
                 {
-                    if (payload == F("SUCCESS"))
-                    {
-                        iterateSensorNodes([]() {
-                            if (sensorNodes[Node_SensorNode::getPointer()] == Query::queue.front().node_id)
-                            {
-                                sensorNodes[Node_SensorNode::getPointer()].setNodeBattery(Query::queue.front().value);
-                                return;
-                            }
-                        });
+                    StaticJsonDocument<64> doc;
+                    deserializeJson(doc, payload);
 
-                        Query::queue.pop_front();
+                    if (doc["status"].as<int>() == t_http_codes::HTTP_CODE_OK)
+                    {
+                        if (doc["values"].as<String>() == F("SUCCESS"))
+                        {
+                            iterateSensorNodes([]() {
+                                if (sensorNodes[Node_SensorNode::getPointer()] == Query::queue.front().node_id)
+                                {
+                                    sensorNodes[Node_SensorNode::getPointer()].setNodeBattery(Query::queue.front().value);
+                                    return;
+                                }
+                            });
+
+                            Query::queue.pop_front();
+                            Query::queue.shrink_to_fit();
+                        }
+                    }
+                    else
+                    {
+                        Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
+                        break;
                     }
                 }
                 else
@@ -640,17 +666,29 @@ void loop()
             }
             else if (Query::queue.front().type == Node_SensorNode::Keys::RST)
             {
-                post.addRequestData("lc_id", String(This::ID.getLocationID()).c_str());
-                post.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id).c_str());
+                httpHandler.addRequestData("lc_id", String(This::ID.getLocationID()));
+                httpHandler.addRequestData("node_id", HexConverter::toString(Query::queue.front().node_id));
 
                 int httpCode;
-                const String payload = post.getStringPayload("insert_node_reset.php", &httpCode);
+                const String payload = httpHandler.getStringPayloadViaPOST("reset", &httpCode);
 
                 if (httpCode == t_http_codes::HTTP_CODE_OK)
                 {
-                    if (payload == F("SUCCESS"))
+                    StaticJsonDocument<64> doc;
+                    deserializeJson(doc, payload);
+
+                    if (doc["status"].as<int>() == t_http_codes::HTTP_CODE_OK)
                     {
-                        Query::queue.pop_front();
+                        if (doc["values"].as<String>() == F("SUCCESS"))
+                        {
+                            Query::queue.pop_front();
+                            Query::queue.shrink_to_fit();
+                        }
+                    }
+                    else
+                    {
+                        Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
+                        break;
                     }
                 }
                 else
@@ -667,14 +705,28 @@ void loop()
     }
 }
 
-void Query::loadStringPayload(const char *phpFilename, void (*stringLoader)(const String &, void (*)()), void (*jsonLoader)())
+void Query::loadStringPayloadViaGET(const char *route, void (*loader)())
 {
     int httpCode;
-    const String payload = post.getStringPayload(phpFilename, &httpCode);
+    const String payload = httpHandler.getStringPayloadViaGET(route, &httpCode);
 
     if (httpCode == t_http_codes::HTTP_CODE_OK)
     {
-        stringLoader(payload, jsonLoader);
+        DeserializationError deserializationError = deserializeJson(Query::document, payload);
+
+        if (deserializationError)
+        {
+            Serial.print(F("[M][E] Deserialization error: "));
+            Serial.print(deserializationError.c_str());
+            Serial.println();
+
+            while (true) // Halt operation
+                delay(0U);
+        }
+        else
+        {
+            loader();
+        }
     }
     else
     {
@@ -685,38 +737,39 @@ void Query::loadStringPayload(const char *phpFilename, void (*stringLoader)(cons
     }
 }
 
-void Query::getSensorCount(const String &stringPayload, void (*)())
+void Query::loadSensorCount()
 {
-    queryDivision.loadDivider(stringPayload.toInt(), QueryByParts::LIMIT);
-}
-
-void Query::getGatewayStatus(const String &stringPayload, void (*)())
-{
-    if (!stringPayload.toInt())
+    if (Query::document["status"].as<int>() == t_http_codes::HTTP_CODE_OK)
     {
-        Serial.println(F("[M][E] Gateway was not found in the database"));
-
-        while (true) // Halt operation
-            delay(0U);
-    }
-}
-
-void Query::loadJsonPayload(const String &stringPayload, void (*loadFunction)())
-{
-    DeserializationError deserializationError = deserializeJson(Query::document, stringPayload.c_str());
-
-    if (deserializationError)
-    {
-        Serial.print(F("[M][E] Deserialization error: "));
-        Serial.print(deserializationError.c_str());
-        Serial.println();
-
-        while (true) // Halt operation
-            delay(0U);
+        queryDivision.loadDivider(Query::document["values"], QueryByParts::LIMIT);
     }
     else
     {
-        loadFunction();
+        Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
+
+        while (true) // Halt operation
+            delay(0U);
+    }
+}
+
+void Query::loadGatewayStatus()
+{
+    if (Query::document["status"].as<int>() == t_http_codes::HTTP_CODE_OK)
+    {
+        if (!Query::document["values"].as<int>())
+        {
+            Serial.println(F("[M][E] Gateway was not found in the database"));
+
+            while (true) // Halt operation
+                delay(0U);
+        }
+    }
+    else
+    {
+        Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
+
+        while (true) // Halt operation
+            delay(0U);
     }
 }
 
@@ -724,24 +777,34 @@ void Query::loadDisplayNodes()
 {
     Node_DisplayNode::setPointerToHome();
 
-    for (size_t index = 0U; index < Query::document.size(); ++index)
+    if (Query::document["status"].as<int>() == t_http_codes::HTTP_CODE_OK)
     {
-        if (Node_DisplayNode::getPointer() >= Node_DisplayNode::getTotalNumberOfDisplayObjects())
+        for (size_t index = 0U; index < Query::document["values"].size(); ++index)
         {
-            Serial.println(F("[M][E] Repeater objects are not enough to contain the devices"));
+            if (Node_DisplayNode::getPointer() >= Node_DisplayNode::getTotalNumberOfDisplayObjects())
+            {
+                Serial.println(F("[M][E] Repeater objects are not enough to contain the devices"));
 
-            while (true) // Halt operation
-                delay(0U);
+                while (true) // Halt operation
+                    delay(0U);
+            }
+
+            displayNodes[Node_DisplayNode::getPointer()].begin(
+                HexConverter::toUShort(Query::document["values"][index]["disp_id"]),
+                encodeDisplayRoute(HexConverter::toUShort(Query::document["values"][index]["disp_id"]),
+                                   HexConverter::toUShort(Query::document["values"][index]["recv_rt"]),
+                                   Message::SUBSEPARATOR),
+                Query::document["values"][index]["is_main"]);
+
+            Node_DisplayNode::preincrementPointer();
         }
+    }
+    else
+    {
+        Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
 
-        displayNodes[Node_DisplayNode::getPointer()].begin(
-            HexConverter::toUShort(Query::document[index]["disp_id"]),
-            encodeDisplayRoute(HexConverter::toUShort(Query::document[index]["disp_id"]),
-                               HexConverter::toUShort(Query::document[index]["recv_rt"]),
-                               Message::SUBSEPARATOR),
-            Query::document[index]["is_main"]);
-
-        Node_DisplayNode::preincrementPointer();
+        while (true) // Halt operation
+            delay(0U);
     }
 }
 
@@ -749,44 +812,64 @@ void Query::loadRepeaterNodes()
 {
     Node_RepeaterNode::setPointerToHome();
 
-    for (size_t index = 0U; index < Query::document.size(); ++index)
+    if (Query::document["status"].as<int>() == t_http_codes::HTTP_CODE_OK)
     {
-        if (Node_RepeaterNode::getPointer() >= Node_RepeaterNode::getTotalNumberOfRepeaterObjects())
+        for (size_t index = 0U; index < Query::document["values"].size(); ++index)
         {
-            Serial.println(F("[M][E] Repeater objects are not enough to contain the devices"));
+            if (Node_RepeaterNode::getPointer() >= Node_RepeaterNode::getTotalNumberOfRepeaterObjects())
+            {
+                Serial.println(F("[M][E] Repeater objects are not enough to contain the devices"));
 
-            while (true) // Halt operation
-                delay(0U);
+                while (true) // Halt operation
+                    delay(0U);
+            }
+
+            repeaterNodes[Node_RepeaterNode::getPointer()].begin(
+                HexConverter::toUShort(Query::document["values"][index]["rptr_id"]),
+                HexConverter::toUShort(Query::document["values"][index]["send_rt"]));
+
+            Node_RepeaterNode::preincrementPointer();
         }
+    }
+    else
+    {
+        Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
 
-        repeaterNodes[Node_RepeaterNode::getPointer()].begin(
-            HexConverter::toUShort(Query::document[index]["rptr_id"]),
-            HexConverter::toUShort(Query::document[index]["send_rt"]));
-
-        Node_RepeaterNode::preincrementPointer();
+        while (true) // Halt operation
+            delay(0U);
     }
 }
 
 void Query::loadSensorNodes()
 {
-    for (size_t index = 0U; index < Query::document.size(); ++index)
+    if (Query::document["status"].as<int>() == t_http_codes::HTTP_CODE_OK)
     {
-        if (Node_SensorNode::getPointer() >= Node_SensorNode::getTotalNumberOfNodeObjects())
+        for (size_t index = 0U; index < Query::document["values"].size(); ++index)
         {
-            Serial.println(F("[M][E] Node objects are not enough to contain the devices"));
+            if (Node_SensorNode::getPointer() >= Node_SensorNode::getTotalNumberOfNodeObjects())
+            {
+                Serial.println(F("[M][E] Node objects are not enough to contain the devices"));
 
-            while (true) // Halt operation
-                delay(0U);
+                while (true) // Halt operation
+                    delay(0U);
+            }
+
+            sensorNodes[Node_SensorNode::getPointer()].begin(
+                HexConverter::toUShort(Query::document["values"][index]["node_id"]),
+                HexConverter::toUShort(Query::document["values"][index]["disp_rt"]));
+
+            sensorNodes[Node_SensorNode::getPointer()].setNodeStatus(Query::document["values"][index]["n_stats"].as<String>().toInt());  // Using toInt() to prevent conversion error
+            sensorNodes[Node_SensorNode::getPointer()].setNodeBattery(Query::document["values"][index]["battery"].as<String>().toInt()); // Using toInt() to prevent conversion error
+
+            Node_SensorNode::preincrementPointer();
         }
+    }
+    else
+    {
+        Serial.println(F("[M][E] Failed to retrieve data due to network or HTTP error"));
 
-        sensorNodes[Node_SensorNode::getPointer()].begin(
-            HexConverter::toUShort(Query::document[index]["node_id"]),
-            HexConverter::toUShort(Query::document[index]["disp_rt"]));
-
-        sensorNodes[Node_SensorNode::getPointer()].setNodeStatus(Query::document[index]["n_stats"].as<String>().toInt());  // Using toInt() to prevent conversion error
-        sensorNodes[Node_SensorNode::getPointer()].setNodeBattery(Query::document[index]["battery"].as<String>().toInt()); // Using toInt() to prevent conversion error
-
-        Node_SensorNode::preincrementPointer();
+        while (true) // Halt operation
+            delay(0U);
     }
 }
 
@@ -934,6 +1017,9 @@ const String encodeDisplayRoute(const unsigned short displayID, const unsigned s
             completeRoute += separator;
         }
     }
+
+    routes.clear();
+    routes.shrink_to_fit();
 
     return completeRoute;
 }
